@@ -1,4 +1,4 @@
-import type { WebsearchConfig } from "../config/schemas"
+import type { WebsearchConfig } from "../config/schema"
 import { log } from "../shared"
 import type { RemoteMcpConfig } from "./types"
 
