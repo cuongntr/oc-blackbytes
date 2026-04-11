@@ -1,4 +1,5 @@
-import type { Hooks, Plugin } from "@opencode-ai/plugin"
+import type { Plugin } from "@opencode-ai/plugin"
+import { log } from "./shared"
 
 function createLogBody(message: string, extra?: Record<string, unknown>) {
   return {
@@ -10,6 +11,8 @@ function createLogBody(message: string, extra?: Record<string, unknown>) {
 }
 
 export const BlackbytesPlugin: Plugin = async ({ client, directory, worktree }) => {
+  // init config context
+  log("[oc-blackbytes] Plugin loading", { directory, worktree })
   await client.app.log({
     body: createLogBody("Plugin initialized", { directory, worktree }),
   })
