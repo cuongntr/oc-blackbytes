@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# OpenCode local project config
+.opencode/
+
+# Environment files
+.env
+.env.*
+
+# macOS
+.DS_Store
