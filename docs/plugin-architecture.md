@@ -203,10 +203,11 @@ oc-blackbytes/
 │   └── index.ts          # Plugin source (single entry point)
 ├── test/
 │   └── index.test.ts     # Tests with bun:test
+├── docs/
+│   ├── plugin-architecture.md   # This file — types, hooks, architecture
+│   └── debugging.md             # Debugging guide and workflows
 ├── dist/
 │   └── index.js          # Build output (bun build)
-├── docs/
-│   └── plugin-architecture.md
 ├── package.json
 ├── biome.json            # Linting/formatting config
 └── AGENTS.md             # Agent instructions

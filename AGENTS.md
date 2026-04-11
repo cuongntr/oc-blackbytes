@@ -18,9 +18,9 @@ Linting and formatting use Biome. Run `bun run check` before committing.
 
 ## Architecture
 
-- `src/index.ts` is the only source file. Exports `MyPlugin` (named + default).
+- `src/index.ts` is the only source file. Exports `BlackbytesPlugin` (named + default).
 - Plugin factory receives `{ client, directory, worktree }` and returns hook implementations.
-- Current hooks: `shell.env` (injects env vars), `event` (logs events via `client.app.log`).
+- Current hooks: `shell.env` (injects `BLACKBYTES_ENABLED=1`), `event` (logs events via `client.app.log`).
 
 ## Important
 
