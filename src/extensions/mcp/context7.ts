@@ -1,4 +1,6 @@
-export const context7 = {
+import type { McpRemoteConfig } from "@opencode-ai/sdk/v2"
+
+export const context7: McpRemoteConfig = {
   type: "remote" as const,
   url: "https://mcp.context7.com/mcp",
   enabled: true,

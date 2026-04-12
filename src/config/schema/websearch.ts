@@ -1,7 +1,6 @@
 import z from "zod"
 
 export const WebsearchProviderSchema = z.enum(["exa", "tavily"])
-
 export const WebsearchConfigSchema = z.object({
   /**
    * Websearch provider to use

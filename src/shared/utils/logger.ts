@@ -2,7 +2,7 @@ import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
 
-import { LOG_FILENAME } from "./plugin-identity"
+import { LOG_FILENAME } from "../constants/plugin-identity"
 
 const logFile = path.join(os.tmpdir(), LOG_FILENAME)
 
@@ -19,8 +19,7 @@ function flush(): void {
   buffer = []
   try {
     fs.appendFileSync(logFile, data)
-  } catch {
-  }
+  } catch {}
 }
 
 /** Schedules a flush of the log buffer after a delay. */
@@ -43,8 +42,7 @@ export function log(message: string, data?: unknown): void {
     } else {
       scheduleFlush()
     }
-  } catch {
-  }
+  } catch {}
 }
 
 /** Returns the path to the log file. */

@@ -1,6 +1,6 @@
-import z from "zod";
-import { WebsearchConfigSchema } from "./websearch";
-import { AnyMcpNameSchema } from "../../mcp/types";
+import z from "zod"
+import { AnyMcpNameSchema } from "./mcp"
+import { WebsearchConfigSchema } from "./websearch"
 
 export const OcBlackbytesConfigSchema = z.object({
   $schema: z.string().optional(),
@@ -12,7 +12,7 @@ export const OcBlackbytesConfigSchema = z.object({
   disabled_tools: z.array(z.string()).optional(),
 
   mcp_env_alllowlist: z.array(z.string()).optional(),
-  hashlint_edit: z.boolean().optional(),
+  hashline_edit: z.boolean().optional(),
   model_fallback: z.boolean().optional(),
   auto_update: z.boolean().optional(),
   websearch: WebsearchConfigSchema.optional(),

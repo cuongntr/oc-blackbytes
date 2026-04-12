@@ -1,8 +1,8 @@
-import type { WebsearchConfig } from "../config/schema"
-import { log } from "../shared"
-import type { RemoteMcpConfig } from "./types"
+import type { McpRemoteConfig } from "@opencode-ai/sdk/v2"
+import type { WebsearchConfig } from "../../config"
+import { log } from "../../shared"
 
-export function createWebsearchConfig(config?: WebsearchConfig): RemoteMcpConfig | undefined {
+export function createWebsearchConfig(config?: WebsearchConfig): McpRemoteConfig | undefined {
   const provider = config?.provider || "exa"
 
   if (provider === "tavily") {
