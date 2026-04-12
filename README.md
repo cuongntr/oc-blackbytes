@@ -1,12 +1,13 @@
 # oc-blackbytes
 
-An OpenCode plugin tailored to streamline everyday workflows. Injects environment variables into shell commands and logs all OpenCode events for observability.
+An OpenCode plugin for workflow automation. Provisions built-in MCP servers, manages plugin configuration via JSONC, and provides structured file logging.
 
 ## Features
 
-- **Shell environment injection** — sets `BLACKBYTES_ENABLED=1` in all shell commands run by OpenCode
-- **Event logging** — captures and logs every OpenCode event (session lifecycle, tool calls, file edits, etc.)
-- **Structured logging** — uses `client.app.log()` for traceable, filterable logs
+- **MCP server provisioning** — automatically configures built-in MCP servers (websearch via Exa/Tavily, Context7, grep.app)
+- **JSONC config management** — loads plugin settings from `oc-blackbytes.json` or `oc-blackbytes.jsonc` with comments support
+- **MCP merging pipeline** — merges built-in MCPs with user-defined servers, respects `disabled_mcps` and user-disabled entries
+- **Structured file logging** — buffered logger writes to `/tmp/oc-blackbytes.log`
 
 ## Installation
 
@@ -42,22 +43,42 @@ Verify the plugin loads:
 opencode debug config
 ```
 
+## Configuration
+
+Create `oc-blackbytes.jsonc` in your OpenCode config directory:
+
+```jsonc
+{
+  // Disable specific built-in MCP servers
+  "disabled_mcps": ["grep_app"],
+
+  // Websearch provider: "exa" (default) or "tavily"
+  "websearch": {
+    "provider": "exa"
+  }
+}
+```
+
 ## Project Structure
 
 ```
 oc-blackbytes/
 ├── src/
-│   └── index.ts          # Plugin source (single entry point)
+│   ├── index.ts              # Plugin entry — exports BlackbytesPlugin
+│   ├── config/               # Config loading and Zod schema validation
+│   ├── shared/               # Constants, logger, JSONC parser, config dir resolution
+│   ├── extensions/mcp/       # Built-in MCP server configs
+│   └── adapter/pipeline/     # MCP config merging pipeline
 ├── test/
-│   └── index.test.ts     # Tests with bun:test
+│   └── config.test.ts        # Config loader tests (bun:test)
 ├── docs/
-│   ├── plugin-architecture.md   # Plugin types, hooks, and architecture
-│   └── debugging.md             # Debugging guide and workflows
+│   └── debugging.md
 ├── dist/
-│   └── index.js          # Build output (bun build)
+│   └── index.js              # Build output (bun build)
 ├── package.json
-├── biome.json            # Linting/formatting config
-└── AGENTS.md             # Agent instructions
+├── tsconfig.json             # IDE support (noEmit)
+├── biome.json                # Linting/formatting config
+└── AGENTS.md                 # Agent instructions
 ```
 
 ## Commands
@@ -78,13 +99,9 @@ See [docs/debugging.md](docs/debugging.md) for the full debugging guide. Quick r
 # Stream logs to terminal
 opencode --print-logs --log-level DEBUG
 
-# View log files
-# macOS/Linux: ~/.local/share/opencode/log/
+# View plugin file logs
+cat /tmp/oc-blackbytes.log
 ```
-
-## Architecture
-
-See [docs/plugin-architecture.md](docs/plugin-architecture.md) for a deep dive into OpenCode's plugin system — `PluginInput`, `PluginOptions`, `Hooks`, and the input/output hook pattern.
 
 ## Publish
 

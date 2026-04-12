@@ -17,6 +17,23 @@ await client.app.log({
 })
 ```
 
+### Plugin File Logger
+
+The plugin also has a built-in buffered file logger that writes to `/tmp/oc-blackbytes.log`:
+
+```ts
+import { log } from "./shared"
+
+log("Something happened", { key: "value" })
+```
+
+View plugin logs:
+
+```bash
+cat /tmp/oc-blackbytes.log
+tail -f /tmp/oc-blackbytes.log  # stream in real time
+```
+
 ## Viewing Logs
 
 Log files are written to:
@@ -77,7 +94,7 @@ Test hook logic in isolation with `bun:test`:
 bun test
 ```
 
-Mock `client.app.log` to verify calls without a running OpenCode instance. See `test/index.test.ts` for the pattern.
+Mock `client.app.log` to verify calls without a running OpenCode instance. See `test/config.test.ts` for the pattern.
 
 ## Isolate Plugin Issues
 
@@ -105,7 +122,7 @@ rm -rf ~/.cache/opencode
 
 ## Iteration Workflow
 
-1. Edit `src/index.ts`
+1. Edit source files in `src/`
 2. `bun run build`
 3. Load via `file://` path in `opencode.json` or copy to `.opencode/plugins/`
 4. Run `opencode --print-logs --log-level DEBUG` in a test project
