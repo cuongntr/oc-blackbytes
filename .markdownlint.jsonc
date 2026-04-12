@@ -1,0 +1,7 @@
+{
+  // Disable line-length rule - modern editors handle long lines fine
+  "MD013": false,
+
+  // Disable fenced code language requirement - not always necessary
+  "MD040": false
+}
