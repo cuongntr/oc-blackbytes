@@ -1,5 +1,6 @@
 import type { Hooks } from "@opencode-ai/plugin"
 import type { OcBlackbytesConfig } from "../../config"
+import { handleAgentConfig } from "./agent-config-handler"
 import { handleMcpConfig } from "./mcp-config-handler"
 import type { ConfigContext } from "./types"
 
@@ -15,8 +16,11 @@ export function handleConfig(pluginConfig: OcBlackbytesConfig): Hooks {
       // Apply MCP configuration, which merges built-in and user-defined MCPs while respecting disabled settings
       handleMcpConfig(configCtx)
 
+      // Apply agent configuration, which merges built-in agents (bytes, explore, oracle, librarian)
+      // with user-defined agents while respecting disabled settings
+      handleAgentConfig(configCtx)
+
       // handleCommandsConfig(configCtx) // Future: Handle command configuration similarly
-      // handleAgentConfig(configCtx) // Future: Handle agent configuration similarly
     },
   }
 }
