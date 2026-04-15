@@ -1,12 +1,20 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode } from "../types"
 import { isGeminiModel, isGptModel } from "../utils"
+import { createAgentToolRestrictions } from "../utils/permission-compat"
 import { BYTES_DESCRIPTION } from "./agent"
 import { BYTES_DEFAULT_PROMPT } from "./default"
 import { BYTES_GEMINI_PROMPT } from "./gemini"
 import { BYTES_GPT_PROMPT } from "./gpt"
 
 const MODE: AgentMode = "primary"
+
+/**
+ * Tools denied for the primary agent.
+ * todowrite/todoread add noise and consume tokens without meaningful benefit —
+ * the agent organizes work through structured thinking instead.
+ */
+const DENIED_TOOLS = ["todowrite", "todoread"]
 
 /**
  * Creates the Bytes primary agent configuration.
@@ -21,11 +29,14 @@ const MODE: AgentMode = "primary"
  * is used solely for prompt variant selection.
  */
 export function createBytesAgent(model: string): AgentConfig {
+  const restrictions = createAgentToolRestrictions(DENIED_TOOLS)
+
   const base = {
     description: BYTES_DESCRIPTION,
     mode: MODE,
     temperature: 0.3,
     color: "primary" as const,
+    ...restrictions,
   }
 
   if (isGptModel(model)) {

@@ -45,13 +45,13 @@ ${SHARED_SECTIONS.subagentDelegation}
 **Standard workflow for complex tasks:**
 1. Explore (scope) → 2. Oracle (plan, if needed) → 3. Implement → 4. Verify
 
+# Skills
+
+${SHARED_SECTIONS.skillsAwareness}
+
 # Verification Gates
 
 ${SHARED_SECTIONS.verificationGates}
-
-# Task Management
-
-${SHARED_SECTIONS.taskManagement}
 
 # Quality Bar
 

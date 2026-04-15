@@ -13,6 +13,13 @@ import type { ConfigContext } from "./types"
 const DEFAULT_AGENT_NAME = "bytes"
 
 /**
+ * OpenCode default agents that are superseded by plugin agents.
+ * These are disabled (not removed) so OpenCode doesn't fall back to them.
+ * Only applied when the user hasn't explicitly configured these agents.
+ */
+const SUPERSEDED_AGENTS = ["build", "plan"] as const
+
+/**
  * Creates the built-in agent configurations.
  *
  * Model parameter handling:
@@ -134,6 +141,15 @@ export function handleAgentConfig(ctx: ConfigContext): void {
       if (value !== undefined) {
         merged[key] = value
       }
+    }
+  }
+
+  // Disable OpenCode default agents that are superseded by plugin agents,
+  // unless the user has explicitly configured them
+  for (const name of SUPERSEDED_AGENTS) {
+    if (!userAgents?.[name]) {
+      merged[name] = { disable: true }
+      log(`  Superseded by plugin: ${name}`)
     }
   }
 

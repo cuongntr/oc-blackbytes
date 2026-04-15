@@ -66,7 +66,7 @@ ${SHARED_SECTIONS.hashlineEditWorkflow}
 <operations>
 ## Operational Rules
 
-${SHARED_SECTIONS.taskManagement}
+${SHARED_SECTIONS.skillsAwareness}
 
 ${SHARED_SECTIONS.gitHygiene}
 

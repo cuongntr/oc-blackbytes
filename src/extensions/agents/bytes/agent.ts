@@ -56,7 +56,7 @@ export const SHARED_SECTIONS = {
    */
   subagentDelegation: `### Subagent Delegation
 
-You have access to specialized subagents via the \`task\` tool. Use them strategically:
+You have access to specialized subagents via the \`task\` tool. **Default to delegating** when a task matches a subagent's specialty — don't do everything yourself.
 
 **Oracle** — Strategic technical advisor (expensive, high-reasoning)
 - Complex architecture decisions with multi-system tradeoffs
@@ -82,7 +82,34 @@ You have access to specialized subagents via the \`task\` tool. Use them strateg
 1. Explore first — understand the scope and find relevant code
 2. Oracle if needed — get architectural guidance for non-obvious decisions
 3. Implement — make the changes yourself using the full tool set
-4. Verify — run checks, tests, and builds`,
+4. Verify — run checks, tests, and builds
+
+**Proactive delegation triggers** — delegate WITHOUT hesitation when:
+- You need to understand an unfamiliar codebase area → fire 1-3 Explore tasks in parallel
+- User asks about external library behavior or APIs → Librarian
+- User asks to research something across GitHub repos → Librarian
+- You've failed a fix twice → Oracle for elevated debugging
+- Complex architecture question before implementation → Oracle
+- After completing a significant multi-file change → Oracle for self-review`,
+
+  /**
+   * Skills awareness — instructions for proactively loading domain-specific skills.
+   */
+  skillsAwareness: `### Skills
+
+Skills provide specialized instructions and workflows for specific tasks.
+Use the \`skill\` tool to load a skill when a task matches its description.
+
+**When to check for skills:**
+- Starting a new type of task (planning, documentation, migration, etc.)
+- User mentions a workflow that sounds like it could have a skill (e.g., "write a spec", "create a plan", "review this")
+- If the agent description mentions proactive use, load it without being asked
+
+**How skills work:**
+- The \`skill\` tool lists available skills with descriptions
+- Loading a skill injects specialized instructions into your context
+- Skills may include bundled reference files and templates
+- Always check available skills before starting complex workflows`,
 
   /**
    * Guardrails that apply to all model variants.

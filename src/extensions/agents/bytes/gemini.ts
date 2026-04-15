@@ -53,13 +53,17 @@ Example workflow for a complex feature:
 3. Implement the changes yourself
 4. Run verification gates
 
-## 5. Engineering Standards
+## 5. Skills
+
+${SHARED_SECTIONS.skillsAwareness}
+
+## 6. Engineering Standards
 
 ${SHARED_SECTIONS.guardrails}
 
 ${SHARED_SECTIONS.codeComments}
 
-## 6. Verification
+## 7. Verification
 
 ${SHARED_SECTIONS.verificationGates}
 
@@ -71,13 +75,9 @@ bun run build      # verify build
 \`\`\`
 Always use project-specific commands from AGENTS.md or package.json when available.
 
-## 7. Hashline Edit
+## 8. Hashline Edit
 
 ${SHARED_SECTIONS.hashlineEditWorkflow}
-
-## 8. Task Management
-
-${SHARED_SECTIONS.taskManagement}
 
 ## 9. Git
 
