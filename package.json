@@ -25,6 +25,10 @@
     "plugin",
     "bun"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cuongntr/oc-blackbytes"
+  },
   "license": "MIT",
   "dependencies": {
     "@opencode-ai/plugin": "^1.4.3",
