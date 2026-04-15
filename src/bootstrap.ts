@@ -1,6 +1,6 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin"
 import type { OcBlackbytesConfig } from "./config"
-import { handleChatHeaders, handleConfig } from "./handlers"
+import { handleChatHeaders, handleConfig, handleToolExecuteAfter, handleTools } from "./handlers"
 
 /**
  * Creates the OpenCode plugin by setting up necessary hooks based on the provided configuration.
@@ -10,6 +10,7 @@ import { handleChatHeaders, handleConfig } from "./handlers"
  * @returns A promise that resolves to an object containing the hooks for the plugin.
  */
 export async function createOpenCodePlugin({
+  input,
   pluginConfig,
 }: {
   input: PluginInput
@@ -18,6 +19,7 @@ export async function createOpenCodePlugin({
   return {
     ...handleConfig(pluginConfig),
     ...handleChatHeaders(pluginConfig),
-    // Future: Add more handlers here as needed, such as command handlers, agent handlers, etc.
+    tool: handleTools(pluginConfig, input),
+    "tool.execute.after": handleToolExecuteAfter(pluginConfig),
   }
 }
