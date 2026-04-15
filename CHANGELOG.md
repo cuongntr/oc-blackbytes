@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Built-in agent provisioning for `bytes`, `explore`, `oracle`, and `librarian`
+- Tool hook registration for `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`
+- `tool.execute.after` post-processing for hashline-aware `read` and `write` flows
+- Automatic ripgrep and ast-grep binary download and cache management for bundled tools
+- Agent prompt variants tuned for Claude, GPT, and Gemini model families
+
+### Changed
+
+- README and debugging documentation now describe the full current plugin surface, including agents, tools, hook behavior, configuration flags, and runtime requirements
+
 ## [0.1.0] - 2025-04-15
 
 ### Added

@@ -1,25 +1,35 @@
 # Debugging the Plugin
 
-OpenCode plugins have no dedicated debugger. Debugging relies on structured logging, log inspection, and unit tests.
+Debugging relies on structured logs, deterministic local verification, and inspecting the behavior of the plugin's hooks, agents, and bundled tools.
 
-## Structured Logging
+## Verification commands
 
-Use `client.app.log()` instead of `console.log`. Logs are written to OpenCode's internal logging system.
+Run these checks before assuming a runtime issue:
+
+```bash
+bun run build
+bun run check
+bun test
+```
+
+## Structured logging
+
+Use `client.app.log()` for OpenCode-integrated logs instead of `console.log`.
 
 ```ts
 await client.app.log({
   body: {
     service: "oc-blackbytes",
-    level: "info",  // debug | info | warn | error
+    level: "info", // debug | info | warn | error
     message: "Something happened",
     extra: { key: "value" },
   },
 })
 ```
 
-### Plugin File Logger
+## Plugin file logger
 
-The plugin also has a built-in buffered file logger that writes to `/tmp/oc-blackbytes.log`:
+The plugin also writes buffered logs to `/tmp/oc-blackbytes.log`.
 
 ```ts
 import { log } from "./shared"
@@ -27,41 +37,37 @@ import { log } from "./shared"
 log("Something happened", { key: "value" })
 ```
 
-View plugin logs:
+View the file log with:
 
 ```bash
 cat /tmp/oc-blackbytes.log
-tail -f /tmp/oc-blackbytes.log  # stream in real time
+tail -f /tmp/oc-blackbytes.log
 ```
 
-## Viewing Logs
+This log is the fastest way to inspect:
 
-Log files are written to:
+- config file detection and validation failures
+- MCP registration and omission decisions
+- agent and tool registration
+- bundled binary download or fallback behavior
+
+## OpenCode log output
+
+OpenCode stores its own logs separately:
 
 - **macOS/Linux**: `~/.local/share/opencode/log/`
 - **Windows**: `%USERPROFILE%\.local\share\opencode\log\`
 
-Files are timestamped (e.g., `2025-01-09T123456.log`). Only the 10 most recent are kept.
-
-## Real-Time Log Streaming
-
-Run OpenCode with `--print-logs` to stream output to your terminal:
+Stream logs directly in the terminal while reproducing an issue:
 
 ```bash
 opencode --print-logs
-```
-
-For maximum detail:
-
-```bash
 opencode --log-level DEBUG --print-logs
 ```
 
-## Local Plugin Loading
+## Local plugin loading
 
-### Via `opencode.json`
-
-Point the config at your local package path:
+### Load from a local package path
 
 ```json
 {
@@ -70,61 +76,133 @@ Point the config at your local package path:
 }
 ```
 
-Verify it loads:
+Build first, then verify the resolved config:
 
 ```bash
+bun run build
 opencode debug config
 ```
 
-### Via plugin directory
-
-Copy the built file directly into the project plugin directory for instant loading:
+### Load from `.opencode/plugins/`
 
 ```bash
 cp dist/index.js .opencode/plugins/blackbytes.js
 ```
 
-Local plugins in `.opencode/plugins/` are auto-loaded at startup.
+Plugins in `.opencode/plugins/` load automatically at startup.
 
-## Unit Tests
+## Config debugging
 
-Test hook logic in isolation with `bun:test`:
+The plugin loads `oc-blackbytes.jsonc` or `oc-blackbytes.json` from the resolved OpenCode config directory.
+
+Useful checks:
+
+```bash
+opencode debug config
+```
+
+- Confirm the plugin appears in the final OpenCode config.
+- Confirm merged `mcp` and `agent` sections include the expected built-in entries.
+- Confirm `disabled_mcps`, `disabled_agents`, `disabled_tools`, and `hashline_edit` produce the expected final shape.
+
+`OPENCODE_CONFIG_DIR` is the fastest way to point the plugin at an isolated test config directory.
+
+## Tool debugging
+
+The plugin registers these local tools:
+
+- `hashline_edit`
+- `ast_grep_search`
+- `ast_grep_replace`
+- `grep`
+- `glob`
+
+When diagnosing tool issues, check three things first:
+
+1. Whether the tool was disabled through `disabled_tools`
+2. Whether `hashline_edit` was turned off explicitly
+3. Whether the required CLI binary was found or downloaded successfully
+
+### Binary cache locations
+
+Bundled tool binaries are cached under the platform cache directory for `oc-blackbytes`:
+
+- **macOS**: `~/Library/Caches/oc-blackbytes`
+- **Linux**: `${XDG_CACHE_HOME:-~/.cache}/oc-blackbytes`
+- **Windows**: `%LOCALAPPDATA%\oc-blackbytes`
+
+This cache is used for downloaded `rg` and `sg` binaries.
+
+### `grep` / `glob`
+
+`grep` and `glob` prefer ripgrep, then cached ripgrep, then system `grep` as a fallback. If results look incomplete or slow, inspect the log file to confirm which backend was selected.
+
+### `ast_grep_search` / `ast_grep_replace`
+
+`ast-grep` downloads the `sg` binary when needed. Failures usually come from unsupported platforms, download problems, or malformed structural patterns.
+
+### `hashline_edit`
+
+When `hashline_edit` is enabled:
+
+- `read` output is rewritten into `LINE#ID|content` format
+- `write` success output is rewritten into `File written successfully. N lines written.`
+
+If those transformations are missing, verify that `hashline_edit` is not set to `false` in plugin config.
+
+## Chat header debugging
+
+The `chat.headers` hook injects `x-initiator: agent` for:
+
+- `github-copilot`
+- `github-copilot-enterprise`
+
+If the header is missing, confirm the provider ID and whether the model is using the `@ai-sdk/github-copilot` API path, which bypasses this injection.
+
+## Unit tests
+
+Run tests with:
 
 ```bash
 bun test
 ```
 
-Mock `client.app.log` to verify calls without a running OpenCode instance. See `test/config.test.ts` for the pattern.
+The existing test suite uses temp directories and `OPENCODE_CONFIG_DIR` overrides to isolate config behavior. `test/config.test.ts` is the reference pattern for config loader tests.
 
-## Isolate Plugin Issues
+## Isolating plugin issues
 
-If OpenCode crashes or misbehaves, disable all plugins:
+Disable plugins entirely to confirm the problem belongs to `oc-blackbytes`:
 
 ```jsonc
-// ~/.config/opencode/opencode.jsonc
 { "plugin": [] }
 ```
 
-Or clear plugin directories:
+You can also remove local plugin copies temporarily:
 
 - **Global**: `~/.config/opencode/plugins/`
 - **Project**: `<project>/.opencode/plugins/`
 
-Re-enable one at a time to identify the culprit.
+Then re-enable one plugin at a time.
 
-## Clear Cache
+## Clearing stale state
 
-If a plugin install is stuck or behavior is stale:
+If OpenCode or a locally installed plugin looks stale, clear the relevant cache or plugin copy and rebuild.
+
+Common cleanup targets:
 
 ```bash
 rm -rf ~/.cache/opencode
+rm -rf ~/Library/Caches/oc-blackbytes
 ```
 
-## Iteration Workflow
+On Linux, replace the second path with `${XDG_CACHE_HOME:-~/.cache}/oc-blackbytes`.
 
-1. Edit source files in `src/`
-2. `bun run build`
-3. Load via `file://` path in `opencode.json` or copy to `.opencode/plugins/`
-4. Run `opencode --print-logs --log-level DEBUG` in a test project
-5. Watch for plugin initialization and hook execution in logs
-6. Iterate
+## Iteration workflow
+
+1. Edit files in `src/`
+2. Run `bun run build`
+3. Run `bun run check`
+4. Run `bun test`
+5. Load through a `file://` plugin entry or `.opencode/plugins/`
+6. Reproduce with `opencode --print-logs --log-level DEBUG`
+7. Inspect `/tmp/oc-blackbytes.log` and iterate
