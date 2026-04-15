@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release of oc-blackbytes OpenCode plugin
 - Config hook with built-in MCP server provisioning (websearch, Context7, grep.app)
-- Chat headers hook injecting `x-initiator: agent` for GitHub Copilot providers
 - JSONC config support (`oc-blackbytes.json` / `oc-blackbytes.jsonc`)
 - Buffered file logger (`/tmp/oc-blackbytes.log`)
 - Zod v4 schema validation for plugin config
