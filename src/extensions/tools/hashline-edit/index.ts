@@ -1,0 +1,6 @@
+export { toHashlineContent } from "./diff-utils"
+export { formatHashLine, formatHashLines, streamHashLinesFromUtf8 } from "./hash-computation"
+export type { RawHashlineEdit } from "./normalize-edits"
+export { HASHLINE_EDIT_DESCRIPTION } from "./tool-description"
+export { createHashlineEditTool } from "./tools"
+export type { AppendEdit, HashlineEdit, PrependEdit, ReplaceEdit } from "./types"
