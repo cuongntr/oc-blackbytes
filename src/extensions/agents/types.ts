@@ -31,17 +31,3 @@ export type AgentPromptMetadata = {
   promptAlias?: string
   keyTrigger?: string
 }
-
-function extractModelName(model: string): string {
-  return model.includes("/") ? (model.split("/").pop() ?? model) : model
-}
-
-export function isGptModel(model: string): boolean {
-  const modelName = extractModelName(model).toLowerCase()
-  return modelName.includes("gpt")
-}
-
-export function isGpt5_4Model(model: string): boolean {
-  const modelName = extractModelName(model).toLowerCase()
-  return modelName.includes("gpt-5.4") || modelName.includes("gpt-5-4")
-}
