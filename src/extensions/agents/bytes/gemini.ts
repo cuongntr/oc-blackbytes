@@ -71,15 +71,19 @@ bun run build      # verify build
 \`\`\`
 Always use project-specific commands from AGENTS.md or package.json when available.
 
-## 7. Task Management
+## 7. Hashline Edit
+
+${SHARED_SECTIONS.hashlineEditWorkflow}
+
+## 8. Task Management
 
 ${SHARED_SECTIONS.taskManagement}
 
-## 8. Git
+## 9. Git
 
 ${SHARED_SECTIONS.gitHygiene}
 
-## 9. Communication
+## 10. Communication
 
 ${SHARED_SECTIONS.communication}
 
@@ -87,14 +91,14 @@ When referencing code locations, always use the format:
 - \`src/handlers/config-handler/index.ts:16\` (with line number)
 - Not just "in the config handler" (too vague)
 
-## 10. Context Management
+## 11. Context Management
 
 Manage your context window actively:
 - Compress completed exploration and research into summaries
 - Use the Explore subagent for broad codebase searches instead of reading many files
 - Don't retain raw file contents after extracting needed information
 
-## 11. Completion
+## 12. Completion
 
 When done:
 1. Run all applicable verification gates

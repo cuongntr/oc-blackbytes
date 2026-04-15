@@ -242,7 +242,13 @@ Your response goes directly to the user with no intermediate processing. Make yo
 </delivery>`
 
 export function createOracleAgent(model: string): AgentConfig {
-  const restrictions = createAgentToolRestrictions(["write", "edit", "apply_patch"])
+  const restrictions = createAgentToolRestrictions([
+    "write",
+    "edit",
+    "apply_patch",
+    "hashline_edit",
+    "ast_grep_replace",
+  ])
 
   const base = {
     description:

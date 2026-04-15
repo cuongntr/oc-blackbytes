@@ -60,6 +60,10 @@ ${SHARED_SECTIONS.taskManagement}
 - Small, focused diffs. One logical change per edit.
 - Self-documenting code. Comments only for non-obvious "why".
 
+# Hashline Edit
+
+${SHARED_SECTIONS.hashlineEditWorkflow}
+
 # Git
 
 ${SHARED_SECTIONS.gitHygiene}

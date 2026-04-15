@@ -59,6 +59,8 @@ ${SHARED_SECTIONS.guardrails}
 ${SHARED_SECTIONS.verificationGates}
 
 ${SHARED_SECTIONS.codeComments}
+
+${SHARED_SECTIONS.hashlineEditWorkflow}
 </engineering>
 
 <operations>

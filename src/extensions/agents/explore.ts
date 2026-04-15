@@ -106,7 +106,13 @@ Use the right tool for the job:
 Flood with parallel calls. Cross-validate findings across multiple tools.`
 
 export function createExploreAgent(model: string): AgentConfig {
-  const restrictions = createAgentToolRestrictions(["write", "edit", "apply_patch"])
+  const restrictions = createAgentToolRestrictions([
+    "write",
+    "edit",
+    "apply_patch",
+    "hashline_edit",
+    "ast_grep_replace",
+  ])
 
   return {
     description: DESCRIPTION,

@@ -153,4 +153,20 @@ Use the todo list tool to plan and track multi-step work:
 - Don't add comments that restate what the code does. Code should be self-documenting.
 - DO add comments for: non-obvious "why" explanations, workarounds, TODOs with context, public API documentation.
 - Match the existing comment style in the codebase.`,
+
+  /**
+   * Hashline edit workflow — instructions for using LINE#ID-based editing.
+   * Only include in prompts when hashline_edit tool is enabled.
+   */
+  hashlineEditWorkflow: `### Hashline Edit Workflow
+
+When the \`hashline_edit\` tool is available, **prefer it over Edit** for all file modifications:
+
+1. **Always Read first** — Read the target file before editing. The output includes LINE#ID anchors (e.g., \`10#VK|function hello() {\`) on every line.
+2. **Use anchors** — Reference these LINE#ID anchors in your hashline_edit operations. They provide precise, stable targeting that survives line shifts.
+3. **Batch edits** — Submit all related edits for one file in a single hashline_edit call. The system applies them bottom-up automatically — do NOT adjust line numbers for prior edits.
+4. **Re-read between calls** — If the same file needs another edit call, re-read first to get fresh anchors.
+5. **Minimize scope** — Each operation in the edits array should target the smallest logical change. Prefer insertion (append/prepend) over rewriting neighboring lines.
+
+If hashline_edit is not available (disabled in config), fall back to Edit.`,
 } as const

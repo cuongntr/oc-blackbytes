@@ -308,7 +308,14 @@ export const LIBRARIAN_PROMPT_METADATA: AgentPromptMetadata = {
 }
 
 export function createLibrarianAgent(model: string): AgentConfig {
-  const restrictions = createAgentToolRestrictions(["write", "edit", "apply_patch", "task"])
+  const restrictions = createAgentToolRestrictions([
+    "write",
+    "edit",
+    "apply_patch",
+    "task",
+    "hashline_edit",
+    "ast_grep_replace",
+  ])
 
   return {
     description: DESCRIPTION,
