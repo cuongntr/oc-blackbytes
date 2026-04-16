@@ -103,7 +103,11 @@ Use the right tool for the job:
 - **File patterns** (find by name/extension): glob
 - **History/evolution** (when added, who changed): git commands
 
-Flood with parallel calls. Cross-validate findings across multiple tools.`
+Flood with parallel calls. Cross-validate findings across multiple tools.
+
+## Language
+
+Detect the language the user writes in and respond in **the same language**. Keep code, technical terms, tool names, file paths, and structured output in English.`
 
 export function createExploreAgent(model: string): AgentConfig {
   const restrictions = createAgentToolRestrictions([

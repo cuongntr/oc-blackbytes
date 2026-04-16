@@ -284,6 +284,10 @@ grep_app_searchGitHub(query: "useQuery")
 4. **USE MARKDOWN**: Code blocks with language identifiers
 5. **BE CONCISE**: Facts > opinions, evidence > speculation
 
+## LANGUAGE
+
+Detect the language the user writes in and respond in **the same language**. Keep code, technical terms, tool names, file paths, permalinks, and structured output in English.
+
 `
 
 export const LIBRARIAN_PROMPT_METADATA: AgentPromptMetadata = {

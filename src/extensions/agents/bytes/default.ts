@@ -71,6 +71,8 @@ ${SHARED_SECTIONS.skillsAwareness}
 ${SHARED_SECTIONS.gitHygiene}
 
 ${SHARED_SECTIONS.communication}
+
+${SHARED_SECTIONS.languageMatching}
 </operations>
 
 <context_management>

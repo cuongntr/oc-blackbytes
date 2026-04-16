@@ -25,6 +25,9 @@ The plugin wires five OpenCode hook surfaces:
 - **JSONC config loading** — reads `oc-blackbytes.json` or `oc-blackbytes.jsonc` with comments and trailing commas
 - **Structured logging** — buffers plugin logs to `/tmp/oc-blackbytes.log`
 - **Binary auto-installation** — downloads cached search binaries when needed for bundled tools
+- **Language matching** — agents detect the user's language and respond in the same language while keeping code, technical terms, file paths, tool names, and git messages in English
+- **Question permission** — the primary agent (`bytes`) can ask users clarifying questions when a task is ambiguous
+- **Runtime context injection** — each agent's prompt includes an `<available_resources>` section reflecting the actual enabled tools, MCP servers, and peer agents at runtime
 
 ## Installation
 
@@ -107,7 +110,7 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory. For the full conf
 
 ## Built-in agents
 
-The plugin merges these agents into the OpenCode config and sets `default_agent` to `bytes` when no default is already configured.
+The plugin merges these agents into the OpenCode config and sets `default_agent` to `bytes` when no default is already configured. Each agent's prompt is appended with an `<available_resources>` section at config time, reflecting the final runtime state of enabled tools, MCP servers, and peer agents. The `bytes` agent has `question: "allow"` permission, enabling it to ask clarifying questions when a task is ambiguous.
 
 | Agent | Mode | Purpose |
 |---|---|---|
@@ -118,6 +121,16 @@ The plugin merges these agents into the OpenCode config and sets `default_agent`
 | `general` | Subagent | Write-capable execution agent for multi-file implementation, migrations, and cross-layer changes. |
 
 The merge behavior also preserves explicit user disables (`disable: true`), removes entries listed in `disabled_agents`, uses the OpenCode `permission` map format, and marks OpenCode's default `build` and `plan` agents as disabled unless the user configures them directly.
+
+### Agent runtime context
+
+Each enabled agent's prompt is appended with an `<available_resources>` section at config time. This section reflects the final runtime state after all merging and disabling:
+
+- **Bundled tools** — lists enabled tools (filtered by `disabled_tools` and `hashline_edit` config)
+- **MCP servers** — lists active MCP servers with descriptions for built-in MCPs; user-added MCPs also appear
+- **Peer agents** — each agent sees all other enabled agents with their descriptions (but not itself)
+
+If an MCP is disabled or a tool is removed via config, agents automatically stop seeing it in their prompts. User-added MCPs and agents also appear in the runtime context.
 
 ## Built-in commands
 

@@ -92,14 +92,18 @@ When referencing code locations, always use the format:
 - \`src/handlers/config-handler/index.ts:16\` (with line number)
 - Not just "in the config handler" (too vague)
 
-## 11. Context Management
+## 11. Language
+
+${SHARED_SECTIONS.languageMatching}
+
+## 12. Context Management
 
 Manage your context window actively:
 - Compress completed exploration and research into summaries
 - Use the Explore subagent for broad codebase searches instead of reading many files
 - Don't retain raw file contents after extracting needed information
 
-## 12. Completion
+## 13. Completion
 
 When done:
 1. Run all applicable verification gates

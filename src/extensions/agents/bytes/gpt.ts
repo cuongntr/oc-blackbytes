@@ -72,6 +72,10 @@ ${SHARED_SECTIONS.gitHygiene}
 
 ${SHARED_SECTIONS.communication}
 
+# Language
+
+${SHARED_SECTIONS.languageMatching}
+
 # Context Management
 
 Manage context actively. Compress completed research into summaries. Use explore subagent for broad searches instead of reading many files directly. Don't keep raw file contents in context after extracting what you need.

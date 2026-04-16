@@ -102,7 +102,11 @@ When your task is complete, provide a structured summary:
 - Do NOT modify files outside the scope of the task
 - Do NOT spawn additional General agents — you are the executor, not the orchestrator
 - If AGENTS.md exists and specifies build/test commands, use those
-</constraints>`
+</constraints>
+
+<language_matching>
+Detect the language the user writes in and respond in the same language. Keep code, technical terms, tool names, file paths, and structured output in English.
+</language_matching>`
 
 /**
  * GPT-optimized General agent prompt.
@@ -141,7 +145,11 @@ When done, provide:
 
 # Constraints
 
-Do NOT ask follow-up questions. Do NOT expand scope. Do NOT introduce new dependencies without instruction. Do NOT modify files outside task scope. Do NOT spawn additional General agents — you are the executor, not the orchestrator. If AGENTS.md specifies build/test commands, use those.`
+Do NOT ask follow-up questions. Do NOT expand scope. Do NOT introduce new dependencies without instruction. Do NOT modify files outside task scope. Do NOT spawn additional General agents — you are the executor, not the orchestrator. If AGENTS.md specifies build/test commands, use those.
+
+# Language
+
+Detect the language the user writes in and respond in the same language. Keep code, technical terms, tool names, file paths, and structured output in English.`
 
 /**
  * Creates the General (implementation executor) agent configuration.

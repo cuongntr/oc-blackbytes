@@ -75,7 +75,7 @@ src/
 - **`handlers/tool-handler.ts`** — Registers `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`, filtered by `disabled_tools` and `hashline_edit`.
 - **`handlers/tool-execute-after-handler.ts`** — Rewrites `read` output into `LINE#ID|content` anchors and normalizes successful `write` output into line-count summaries when hashline editing is enabled.
 - **`extensions/mcp/`** — Factory for built-in MCP servers: websearch (Exa/Tavily), Context7, grep.app. Controlled by plugin config.
-- **`extensions/agents/`** — Factory for built-in agents: `bytes`, `explore`, `oracle`, `librarian`, and `general`, including model-aware prompt selection and OpenCode `permission` map generation.
+- **`extensions/agents/`** — Factory for built-in agents: `bytes`, `explore`, `oracle`, `librarian`, and `general`, including model-aware prompt selection, language matching (all agents detect user language and respond in kind), and OpenCode `permission` map generation. After config merging, each agent's prompt is appended with an `<available_resources>` section listing the enabled tools, MCP servers, and peer agents.
 - **`extensions/tools/`** — Tool definitions for hashline editing, AST-aware search/replace, regex search, and glob search.
 - **`extensions/commands/`** — Definitions for built-in slash commands. Each command specifies a template, description, and optional agent/model binding.
 
@@ -84,7 +84,7 @@ src/
 1. OpenCode loads `BlackbytesPlugin` from `dist/index.js`
 2. Plugin receives `{ client, directory, worktree }` from OpenCode runtime
 3. Loads `oc-blackbytes.json[c]` from the resolved OpenCode config directory
-4. Returns a `config` hook that provisions MCP servers, built-in agents, and commands into OpenCode's config
+4. Returns a `config` hook that provisions MCP servers, built-in agents, and commands into OpenCode's config, then injects runtime context (`<available_resources>`) into each enabled agent's prompt reflecting the final state of enabled tools, MCPs, and peer agents
 5. Returns a `chat.headers` hook that injects `x-initiator: agent` for supported GitHub Copilot providers
 6. Returns a `chat.params` hook that adapts model parameters at runtime based on actual model family and agent role
 7. Returns a `tool` hook that registers bundled local tools
@@ -100,3 +100,5 @@ src/
 - Built-in agents: `bytes`, `explore`, `oracle`, `librarian`, `general`.
 - Bundled tools: `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, `glob`.
 - Built-in commands: `setup-models`.
+- Language matching is built into every agent's prompt: agents detect the user's language and respond in the same language; code, technical terms, file paths, tool names, and git messages remain in English.
+- The `bytes` agent has `question: "allow"` permission, enabling it to ask clarifying questions via OpenCode's built-in question tool when a task is ambiguous.

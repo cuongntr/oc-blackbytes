@@ -136,6 +136,7 @@ When debugging agent config:
 7. When `model_fallback: true`: confirm provider discovery ran and fallback chains resolved correctly. Check log for `[model-resolver]` entries.
 8. Check log for `[agents] Factory` entries showing per-agent model hints during creation.
 9. Check log for `[agents] Final` entries showing the resolved model assignment for each enabled agent.
+10. Confirm runtime context injection: each enabled agent's prompt should end with an `<available_resources>` section listing enabled tools, MCP servers, and peer agents.
 
 ## Tool debugging
 

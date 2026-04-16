@@ -94,6 +94,9 @@ For manual configuration, continue with the sections below.
 | `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain — tried when the primary model's provider is unavailable. |
 ## Agent overview
 
+Each agent's prompt is appended with an `<available_resources>` section at config time. This section lists the enabled bundled tools, active MCP servers, and peer agents, and reflects the final runtime state after all merging and disabling. If an MCP or tool is disabled via config, agents stop seeing it in their prompts. User-added MCPs and agents also appear.
+
+
 | Agent | Mode | Role | Capabilities | Cost profile |
 |---|---|---|---|---|
 | **bytes** | Primary | End-to-end coding agent. Handles implementation, debugging, refactoring, planning, and review. | Full read/write access, tool use, subagent delegation | Varies (uses UI-selected model) |
@@ -485,3 +488,5 @@ The plugin works without any agent model configuration. All agents use the defau
 7. **Model names follow OpenCode conventions** — Use the `provider/model` format as shown in your OpenCode provider list. Run `opencode debug config` to see available models.
 
 8. **Use fallback chains for resilience** — When `model_fallback: true`, the plugin checks provider connectivity at startup and routes agents to alternative models automatically. This is especially useful when you use multiple providers but one may have quota issues or outages.
+
+9. **Agents are resource-aware** — Each agent's prompt includes the currently enabled tools, MCP servers, and peer agents. Disabling an MCP or tool via config automatically removes it from agent prompts. User-added MCPs also appear in agent context.

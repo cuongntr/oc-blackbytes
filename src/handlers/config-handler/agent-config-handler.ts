@@ -1,10 +1,14 @@
 import type { AgentConfig } from "@opencode-ai/sdk/v2"
-import type { AgentModelConfig } from "../../config/schema/oc-blackbytes-config"
+import type { AgentModelConfig, OcBlackbytesConfig } from "../../config/schema/oc-blackbytes-config"
 import { createBytesAgent } from "../../extensions/agents/bytes"
 import { createExploreAgent } from "../../extensions/agents/explore"
 import { createGeneralAgent } from "../../extensions/agents/general"
 import { createLibrarianAgent } from "../../extensions/agents/librarian"
 import { createOracleAgent } from "../../extensions/agents/oracle"
+import {
+  appendRuntimeContextToAgents,
+  computeRuntimeContext,
+} from "../../extensions/agents/utils/runtime-context"
 import { resolveAllAgentModels } from "../../services"
 import { log } from "../../shared"
 import type { ConfigContext } from "./types"
@@ -161,6 +165,48 @@ function applyUserDisabledAgents(
   return applied
 }
 
+/** All bundled tool names that this plugin can register. Keep in sync with tool-handler.ts. */
+const BUNDLED_TOOLS = [
+  "hashline_edit",
+  "ast_grep_search",
+  "ast_grep_replace",
+  "grep",
+  "glob",
+] as const
+
+/**
+ * Computes the list of enabled MCP server names from the merged config.
+ * Called after handleMcpConfig has already merged and filtered MCPs.
+ */
+function getEnabledMcpNames(ctx: ConfigContext): string[] {
+  const mcps = ctx.config.mcp ?? {}
+  return Object.entries(mcps)
+    .filter(([, entry]) => {
+      if (typeof entry === "object" && entry !== null && "enabled" in entry) {
+        return entry.enabled !== false
+      }
+      return true
+    })
+    .map(([name]) => name)
+}
+
+/**
+ * Computes the list of enabled bundled tool names.
+ * Mirrors the filtering logic in tool-handler.ts.
+ */
+function getEnabledToolNames(pluginConfig: OcBlackbytesConfig): string[] {
+  const disabledTools = new Set((pluginConfig.disabled_tools ?? []).map((t) => t.toLowerCase()))
+  const tools: string[] = []
+
+  for (const name of BUNDLED_TOOLS) {
+    // hashline_edit has special enable/disable logic
+    if (name === "hashline_edit" && pluginConfig.hashline_edit === false) continue
+    if (disabledTools.has(name.toLowerCase())) continue
+    tools.push(name)
+  }
+
+  return tools
+}
 /**
  * Applies agent configuration by merging built-in agents with user-defined ones,
  * respecting both user-disabled and plugin-disabled settings.
@@ -231,16 +277,16 @@ export function handleAgentConfig(ctx: ConfigContext): void {
     log(`  Removed by plugin config: ${name}`)
   }
 
-  // Log enabled agents for debugging
-  const enabledCount = Object.values(merged).filter((a) => !a.disable).length
-  log(`  Total agents enabled: ${enabledCount}`)
-
-  // Log final model assignment per agent for debugging
-  for (const [name, agent] of Object.entries(merged)) {
-    if (agent.disable) continue
-    const model = (agent as Record<string, unknown>).model
-    log(`  [agents] Final: ${name} → model=${model || "(opencode default)"}`)
-  }
+  // Inject runtime context into agent prompts so agents know what resources are available
+  const runtimeContext = computeRuntimeContext(
+    merged,
+    getEnabledMcpNames(ctx),
+    getEnabledToolNames(ctx.pluginConfig),
+  )
+  appendRuntimeContextToAgents(merged, runtimeContext)
+  log(
+    `  Runtime context injected: ${runtimeContext.enabledTools.length} tools, ${runtimeContext.enabledMcps.length} MCPs`,
+  )
 
   ctx.config.agent = merged
 

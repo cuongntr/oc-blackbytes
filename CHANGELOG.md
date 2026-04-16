@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-16
+
+### Added
+
+- Language matching in all agent prompts — agents detect the user's language and respond in the same language while keeping code, technical terms, file paths, tool names, and git messages in English
+- `question: "allow"` permission on the `bytes` agent, enabling it to ask users clarifying questions via OpenCode's built-in question tool when a task is ambiguous
+- Runtime context injection — after config merging, each enabled agent's prompt is appended with an `<available_resources>` section listing the currently enabled bundled tools, active MCP servers (with descriptions for built-in MCPs), and peer agents (excluding itself)
+- `runtime-context.ts` utility module (`src/extensions/agents/utils/`) with `computeRuntimeContext`, `buildRuntimeContextSection`, and `appendRuntimeContextToAgents` functions
+
+### Changed
+
+- Documentation updated across README, AGENTS.md, configuration guide, and debugging guide to reflect language matching, question permission, and runtime context injection
+
 ## [0.6.0] - 2026-04-16
 
 ### Added

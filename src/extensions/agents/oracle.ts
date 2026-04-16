@@ -149,7 +149,11 @@ Before finalizing answers on architecture, security, or performance:
 
 <delivery>
 Your response goes directly to the user with no intermediate processing. Make your final message self-contained: a clear recommendation they can act on immediately, covering both what to do and why.
-</delivery>`
+</delivery>
+
+<language_matching>
+Detect the language the user writes in and respond in the same language. Keep code, technical terms, tool names, file paths, and structured output in English.
+</language_matching>`
 
 /**
  * GPT-5.4 Optimized Oracle System Prompt
@@ -239,7 +243,11 @@ Before finalizing answers on architecture, security, or performance: re-scan for
 
 <delivery>
 Your response goes directly to the user with no intermediate processing. Make your final message self-contained: a clear recommendation they can act on immediately, covering both what to do and why. Dense and useful beats long and thorough. Deliver actionable insight, not exhaustive analysis.
-</delivery>`
+</delivery>
+
+<language_matching>
+Detect the language the user writes in and respond in the same language. Keep code, technical terms, tool names, file paths, and structured output in English.
+</language_matching>`
 
 export function createOracleAgent(model: string): AgentConfig {
   const restrictions = createAgentToolRestrictions([

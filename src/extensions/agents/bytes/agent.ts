@@ -207,4 +207,17 @@ When the \`hashline_edit\` tool is available, **prefer it over Edit** for all fi
 5. **Minimize scope** — Each operation in the edits array should target the smallest logical change. Prefer insertion (append/prepend) over rewriting neighboring lines.
 
 If hashline_edit is not available (disabled in config), fall back to Edit.`,
+  /**
+   * Language matching — detect and respond in the user's language.
+   */
+  languageMatching: `### Language Matching
+
+Detect the language the user writes in and respond in **the same language**. If the user writes in Vietnamese, respond in Vietnamese. If they write in Japanese, respond in Japanese. If they write in English (or you can't determine the language), respond in English.
+
+Exceptions — always keep these in English regardless of response language:
+- Code, code comments, and code identifiers
+- Technical terms, tool names, and CLI commands
+- File paths and URLs
+- Git commit messages
+- Structured output formats (JSON, YAML, etc.)`,
 } as const

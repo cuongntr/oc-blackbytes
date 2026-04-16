@@ -30,13 +30,14 @@ const DENIED_TOOLS = ["todowrite", "todoread"]
  */
 export function createBytesAgent(model: string): AgentConfig {
   const restrictions = createAgentToolRestrictions(DENIED_TOOLS)
+  const permission = { ...restrictions.permission, question: "allow" as const }
 
   const base = {
     description: BYTES_DESCRIPTION,
     mode: MODE,
     temperature: 0.3,
     color: "primary" as const,
-    ...restrictions,
+    permission,
   }
 
   if (isGptModel(model)) {
