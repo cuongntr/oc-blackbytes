@@ -1,442 +1,149 @@
 # Configuration Guide
 
-This guide covers all `oc-blackbytes.jsonc` configuration options, recommended model assignments per agent, and example setups for common provider combinations.
+This guide covers the current `oc-blackbytes.jsonc` configuration surface, agent roles, model assignment strategy, fallback resolution, and practical example setups.
 
-## Table of Contents
+## Table of contents
 
-- [Quick setup with /setup-models](#quick-setup-with-setup-models)
 - [Config file location](#config-file-location)
+- [Quick setup with `/setup-models`](#quick-setup-with-setup-models)
 - [Full config reference](#full-config-reference)
-- [Agent overview](#agent-overview)
-- [Recommended models per agent](#recommended-models-per-agent)
+- [Built-in agents](#built-in-agents)
+- [Per-agent model configuration](#per-agent-model-configuration)
+- [Model recommendations by role](#model-recommendations-by-role)
 - [Model fallback resolution](#model-fallback-resolution)
 - [Runtime model parameter adaptation](#runtime-model-parameter-adaptation)
+- [Built-in MCP servers](#built-in-mcp-servers)
+- [Bundled tools](#bundled-tools)
 - [Example configurations](#example-configurations)
-- [Tips and best practices](#tips-and-best-practices)
+- [Operational notes](#operational-notes)
 
 ## Config file location
 
-Create `oc-blackbytes.jsonc` (or `oc-blackbytes.json`) in the OpenCode config directory:
+Create `oc-blackbytes.jsonc` or `oc-blackbytes.json` in the resolved OpenCode config directory.
 
-| Platform | Default path |
-|---|---|
-| Linux / macOS (CLI) | `~/.config/opencode/oc-blackbytes.jsonc` |
-| Linux / macOS (Tauri desktop) | `~/.config/ai.opencode.desktop/oc-blackbytes.jsonc` |
-| Windows (CLI) | `%APPDATA%\opencode\oc-blackbytes.jsonc` |
+Resolution behavior:
 
-The `OPENCODE_CONFIG_DIR` environment variable overrides the default path.
+- CLI defaults to the OpenCode config directory
+- `OPENCODE_CONFIG_DIR` overrides the CLI location
+- desktop builds use the relevant Tauri config directories
+- desktop resolution falls back to the CLI config location when an existing CLI OpenCode config is present
 
-## Quick setup with /setup-models
+## Quick setup with `/setup-models`
 
-The fastest way to configure model assignments is the built-in `/setup-models` command. Type `/setup-models` in the OpenCode chat to:
+`/setup-models` is the built-in command for generating or updating model assignments.
 
-1. Discover which models and providers are available
-2. Check for existing plugin configuration
-3. Recommend optimal model assignments per agent role
-4. Write the configuration to `oc-blackbytes.jsonc`
+It:
 
-The command respects existing settings — if a config file already exists, it merges model assignments without discarding other fields.
+1. runs `opencode models`
+2. checks for an existing `oc-blackbytes.jsonc` or `oc-blackbytes.json`
+3. recommends models by agent role
+4. writes or merges plugin config in JSONC format
 
-For manual configuration, continue with the sections below.
+When a config file already exists, the command preserves unrelated fields and merges the generated `agents` and `model_fallback` settings into the existing file.
+
 ## Full config reference
 
 ```jsonc
 {
-  // Disable specific built-in MCP servers
-  "disabled_mcps": [],            // e.g., ["grep_app", "context7"]
+  "$schema": "https://opencode.ai/config.json",
 
-  // Disable specific built-in agents
-  "disabled_agents": [],          // e.g., ["oracle", "librarian"]
+  "disabled_mcps": ["grep_app"],
+  "disabled_agents": ["oracle"],
+  "disabled_tools": ["ast_grep_replace"],
 
-  // Disable specific hooks
-  "disabled_hooks": [],           // e.g., ["chat.headers"]
-
-  // Disable specific bundled tools
-  "disabled_tools": [],           // e.g., ["ast_grep_replace"]
-
-  // Enable/disable hashline editing (LINE#ID anchors in read output)
   "hashline_edit": true,
+  "model_fallback": true,
 
-  // Websearch MCP backend
   "websearch": {
-    "provider": "exa"             // "exa" (default) or "tavily"
+    "provider": "exa"
   },
-
-  // Per-agent model overrides (see detailed section below)
-  "agents": {
-    "oracle": { "model": "openai/o3", "reasoningEffort": "high" },
-    "explore": { "model": "google/gemini-2.5-flash" },
-    "librarian": { "model": "google/gemini-2.5-flash" },
-    "general": { "model": "anthropic/claude-sonnet-4-6" }
-  },
-
-  // Model fallback resolution is disabled by default; set to true to enable provider discovery + fallback chains
-  "model_fallback": true,
-
-  // Global fallback chain for all agents
-  "fallback_models": [
-    "anthropic/claude-sonnet-4-6",
-    { "model": "openai/gpt-4.1", "reasoningEffort": "medium" },
-    "google/gemini-2.5-pro"
-  ],
-
-  "auto_update": false
-}
-```
-
-### Agent model config fields
-
-| Field | Type | Description |
-|---|---|---|
-| `model` | `string` | Model identifier in `provider/model` format. For subagents, this sets the model directly. For `bytes`, it only affects prompt variant selection — the actual model is determined by the OpenCode UI. |
-| `reasoningEffort` | `string` | Override reasoning effort for OpenAI models: `"low"`, `"medium"`, or `"high"`. |
-| `temperature` | `number` | Override temperature (0.0–2.0). Lower = more deterministic, higher = more creative. |
-| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain — tried when the primary model's provider is unavailable. |
-## Agent overview
-
-Each agent's prompt is appended with an `<available_resources>` section at config time. This section lists the enabled bundled tools, active MCP servers, and peer agents, and reflects the final runtime state after all merging and disabling. If an MCP or tool is disabled via config, agents stop seeing it in their prompts. User-added MCPs and agents also appear.
-
-
-| Agent | Mode | Role | Capabilities | Cost profile |
-|---|---|---|---|---|
-| **bytes** | Primary | End-to-end coding agent. Handles implementation, debugging, refactoring, planning, and review. | Full read/write access, tool use, subagent delegation | Varies (uses UI-selected model) |
-| **explore** | Subagent | Read-only codebase search. Broad, parallel file discovery. | Read-only: grep, glob, file reading | Should be cheap/fast |
-| **oracle** | Subagent | Read-only high-reasoning advisor. Architecture decisions, debugging escalation, self-review. | Read-only: deep analysis, no file writing | Can be expensive (used sparingly) |
-| **librarian** | Subagent | Read-only research agent. External libraries, remote repos, documentation lookup. | Read-only: web search, GitHub, docs | Should be cheap/fast |
-| **general** | Subagent | Write-capable implementation executor. Multi-file changes, migrations, boilerplate. | Full read/write access, tool use | Mid-tier (bytes scopes work for it) |
-
-## Recommended models per agent
-
-### bytes — Primary agent
-
-**Leave unconfigured** — `bytes` always uses the model selected in the OpenCode UI. Setting `model` for `bytes` only changes which prompt variant is loaded (Claude vs GPT vs Gemini style), not the actual model used.
-
-If you want to change the primary model, set it in `opencode.jsonc`:
-
-```jsonc
-// opencode.jsonc
-{
-  "model": "anthropic/claude-opus-4-6"
-}
-```
-
-### oracle — Reasoning advisor
-
-Oracle is called for hard problems: architecture decisions, debugging escalation after failed attempts, and self-review of significant changes. It benefits most from strong reasoning capabilities.
-
-**Key principle**: Oracle should ideally use a **different provider** than your primary model to provide a genuine "second opinion" perspective.
-
-| Provider | Recommended model | Notes |
-|---|---|---|
-| OpenAI | `openai/o3` | Best-in-class reasoning. Pair with `"reasoningEffort": "high"`. |
-| OpenAI | `openai/gpt-5.4` | Flagship model with strong reasoning. |
-| Anthropic | `anthropic/claude-opus-4-6` | Deep reasoning with extended thinking. |
-| Google | `google/gemini-2.5-pro` | Strong reasoning, large context window. |
-| DeepSeek | `deepseek/deepseek-r1` | Open-source reasoning model, cost-effective. |
-
-```jsonc
-// Example: If bytes uses Claude, set oracle to a different provider
-"oracle": { "model": "openai/o3", "reasoningEffort": "high" }
-
-// Example: If bytes uses GPT, set oracle to Claude
-"oracle": { "model": "anthropic/claude-opus-4-6" }
-```
-
-### explore — Codebase search
-
-Explore runs frequent, parallelizable searches across the codebase. It needs speed and low cost — reasoning power is not important. Multiple explore tasks often fire simultaneously.
-
-| Provider | Recommended model | Notes |
-|---|---|---|
-| Google | `google/gemini-2.5-flash` | Very fast, cheap, excellent for search tasks. |
-| OpenAI | `openai/gpt-4.1-mini` | Fast and cost-effective. |
-| OpenAI | `openai/gpt-4.1-nano` | Cheapest OpenAI option for simple search. |
-| Anthropic | `anthropic/claude-haiku-3.5` | Fast Claude option. |
-| DeepSeek | `deepseek/deepseek-chat` | Very cheap, good for search. |
-
-```jsonc
-"explore": { "model": "google/gemini-2.5-flash", "temperature": 0.1 }
-```
-
-### librarian — Research agent
-
-Librarian searches external documentation, GitHub repos, and library APIs. Similar cost profile to explore — speed matters more than deep reasoning.
-
-| Provider | Recommended model | Notes |
-|---|---|---|
-| Google | `google/gemini-2.5-flash` | Fast, cheap, large context for doc reading. |
-| OpenAI | `openai/gpt-4.1-mini` | Good balance of speed and comprehension. |
-| Anthropic | `anthropic/claude-haiku-3.5` | Fast, good at reading documentation. |
-| DeepSeek | `deepseek/deepseek-chat` | Cost-effective for documentation lookup. |
-
-```jsonc
-"librarian": { "model": "google/gemini-2.5-flash" }
-```
-
-### general — Implementation executor
-
-General executes well-scoped implementation tasks that `bytes` delegates. It needs solid code generation but doesn't need to be a flagship model — `bytes` handles the complex thinking and scoping.
-
-| Provider | Recommended model | Notes |
-|---|---|---|
-| Anthropic | `anthropic/claude-sonnet-4-6` | Strong coding, good balance of quality and cost. |
-| OpenAI | `openai/gpt-4.1` | Reliable code generation, mid-tier pricing. |
-| Google | `google/gemini-2.5-pro` | Good coding with large context. |
-| DeepSeek | `deepseek/deepseek-chat` | Cost-effective coding model. |
-
-```jsonc
-"general": { "model": "anthropic/claude-sonnet-4-6" }
-```
-
-## Model fallback resolution
-
-The plugin can discover which providers have valid credentials at startup and automatically resolve models through fallback chains when a preferred model's provider is unavailable. This behavior is **disabled by default** — set `model_fallback: true` to enable it.
-
-### How it works
-
-1. **Provider discovery** — at plugin init, calls `client.provider.list()` to find connected providers
-2. **Model resolution** — for each agent with a configured model:
-   1. If the primary model resolves against the connected provider's actual model list → use it
-   2. Otherwise, walk the agent's per-agent `fallback_models` chain → use the first model that resolves
-   3. Otherwise, walk the global `fallback_models` chain → use the first model that resolves
-   4. Otherwise, fall back to OpenCode's default model
-3. **Graceful degradation** — if provider discovery fails (server not ready, network error), fallback resolution is skipped entirely and models are used as-is
-
-### Customizing fallback chains
-
-```jsonc
-{
-  // Enable provider discovery and fallback resolution
-  "model_fallback": true,
-
-
-  // Global fallback chain (applies to all agents unless overridden)
-  "fallback_models": [
-    "anthropic/claude-sonnet-4-6",
-    "openai/gpt-4.1",
-    "google/gemini-2.5-pro"
-  ],
 
   "agents": {
     "oracle": {
-      "model": "openai/o3",
-      "reasoningEffort": "high",
-      // Per-agent fallback chain (tried before global chain)
-      "fallback_models": [
-        { "model": "anthropic/claude-opus-4-6" },
-        { "model": "deepseek/deepseek-r1" }
-      ]
-    },
-    "explore": { "model": "google/gemini-2.5-flash" },
-    "general": { "model": "anthropic/claude-sonnet-4-6" }
-  }
-}
-```
-
-In this example, if OpenAI is unavailable for oracle, it tries Anthropic Claude Opus first, then DeepSeek R1, then the global chain.
-
-### Fallback chain formats
-
-Fallback chains support flexible formats:
-
-```jsonc
-// Single model string
-"fallback_models": "openai/gpt-4.1"
-
-// Array of model strings
-"fallback_models": ["openai/gpt-4.1", "google/gemini-2.5-pro"]
-
-// Array with per-model parameter overrides
-"fallback_models": [
-  { "model": "openai/gpt-4.1", "reasoningEffort": "medium" },
-  { "model": "google/gemini-2.5-pro", "temperature": 0.3 }
-]
-
-// Mixed format
-"fallback_models": [
-  "anthropic/claude-sonnet-4-6",
-  { "model": "openai/gpt-4.1", "reasoningEffort": "high" }
-]
-```
-
-When a fallback entry includes `reasoningEffort` or `temperature`, those overrides take effect only when that specific fallback model is actually used — they don't affect the primary model.
-
-### Provider and model availability check
-
-The resolver validates both provider connectivity and model availability within that provider. Exact model IDs are preferred, and provider-scoped prefix matching is used for date-suffixed variants like `anthropic/claude-sonnet-4-6` → `anthropic/claude-sonnet-4-6-20260401`. Models without a provider prefix (no `/`) are still treated as available because the plugin cannot validate them.
-### Debugging fallback resolution
-
-Check `/tmp/oc-blackbytes.log` for resolution details:
-
-```
-[model-resolver] Connected providers: anthropic, google
-[model-resolver] Resolving agent models with fallback chains...
-  [model-resolver] oracle: primary model openai/o3 not available, trying fallbacks...
-  [model-resolver] oracle: resolved → anthropic/claude-opus-4-6 (agent fallback)
-  [model-resolver] explore: using primary model google/gemini-2.5-flash
-```
-
-## Runtime model parameter adaptation
-
-The `chat.params` hook automatically applies provider-correct parameters at inference time. You don't need to manually configure thinking/reasoning — the plugin handles it based on the actual model being used.
-
-### What happens automatically
-
-| Model family | Automatic behavior |
-|---|---|
-| **Claude** (Anthropic) | Enables extended thinking with per-agent budget: `bytes` 32K tokens, `oracle` 32K tokens, `general` 16K tokens. Strips incompatible OpenAI options. |
-| **GPT** (OpenAI) | Sets reasoning effort per agent: `oracle` → `"high"`, `bytes`/`general` → `"medium"`. Strips incompatible Claude options. |
-| **Gemini / Other** | Strips all provider-specific options to avoid errors. |
-| **explore / librarian** | No thinking/reasoning is applied regardless of model — speed priority. |
-
-### When to use manual overrides
-
-Use the `agents` config to override defaults when:
-
-- You want oracle to use lower reasoning effort to save cost: `"reasoningEffort": "low"`
-- You want a specific agent to use a lower/higher temperature
-- You're using a provider where the automatic defaults don't work well
-
-```jsonc
-{
-  "agents": {
-    "oracle": { "model": "openai/o3", "reasoningEffort": "medium" },
-    "explore": { "temperature": 0.0 }
-  }
-}
-```
-
-## Example configurations
-
-### Anthropic primary + OpenAI reasoning
-
-Best when: You primarily use Claude but want a different perspective for oracle.
-
-```jsonc
-{
-  "agents": {
-    "oracle": { "model": "openai/o3", "reasoningEffort": "high" },
-    "explore": { "model": "anthropic/claude-haiku-3.5" },
-    "librarian": { "model": "anthropic/claude-haiku-3.5" },
-    "general": { "model": "anthropic/claude-sonnet-4-6" }
-  }
-}
-```
-
-- **bytes**: Claude (from OpenCode UI) — flagship reasoning
-- **oracle**: OpenAI o3 — different provider for genuine second opinion
-- **explore/librarian**: Claude Haiku — fast and cheap within same provider
-- **general**: Claude Sonnet — solid coding, same provider
-
-### OpenAI primary + Anthropic advisor
-
-Best when: You primarily use GPT models.
-
-```jsonc
-{
-  "agents": {
-    "oracle": { "model": "anthropic/claude-opus-4-6" },
-    "explore": { "model": "openai/gpt-4.1-mini" },
-    "librarian": { "model": "openai/gpt-4.1-mini" },
-    "general": { "model": "openai/gpt-4.1" }
-  }
-}
-```
-
-### Multi-provider mix (cost-optimized)
-
-Best when: You have multiple provider API keys and want to minimize cost.
-
-```jsonc
-{
-  "agents": {
-    "oracle": { "model": "deepseek/deepseek-r1" },
-    "explore": { "model": "google/gemini-2.5-flash", "temperature": 0.1 },
-    "librarian": { "model": "google/gemini-2.5-flash" },
-    "general": { "model": "deepseek/deepseek-chat" }
-  }
-}
-```
-
-- **oracle**: DeepSeek R1 — strong reasoning at low cost
-- **explore/librarian**: Gemini Flash — extremely fast and cheap
-- **general**: DeepSeek Chat — cost-effective coding
-
-### Single provider (Anthropic only)
-
-Best when: You only have an Anthropic API key.
-
-```jsonc
-{
-  "agents": {
-    "oracle": { "model": "anthropic/claude-opus-4-6" },
-    "explore": { "model": "anthropic/claude-haiku-3.5" },
-    "librarian": { "model": "anthropic/claude-haiku-3.5" },
-    "general": { "model": "anthropic/claude-sonnet-4-6" }
-  }
-}
-```
-
-### Single provider (OpenAI only)
-
-Best when: You only have an OpenAI API key.
-
-```jsonc
-{
-  "agents": {
-    "oracle": { "model": "openai/o3", "reasoningEffort": "high" },
-    "explore": { "model": "openai/gpt-4.1-mini" },
-    "librarian": { "model": "openai/gpt-4.1-mini" },
-    "general": { "model": "openai/gpt-4.1" }
-  }
-}
-```
-
-### GitHub Copilot
-
-Best when: You use GitHub Copilot as your provider.
-
-```jsonc
-{
-  "agents": {
-    "oracle": { "model": "github-copilot/claude-opus-4-6" },
-    "explore": { "model": "github-copilot/gpt-4.1-mini" },
-    "librarian": { "model": "github-copilot/gpt-4.1-mini" },
-    "general": { "model": "github-copilot/claude-sonnet-4-6" }
-  }
-}
-```
-
-### With fallback chains (multi-provider resilience)
-
-Best when: You have multiple provider API keys and want automatic failover.
-
-```jsonc
-{
-  "model_fallback": true,
-
-  "fallback_models": [
-    "anthropic/claude-sonnet-4-6",
-    "openai/gpt-4.1",
-    "google/gemini-2.5-pro"
-  ],
-
-  "agents": {
-    "oracle": {
-      "model": "openai/o3",
+      "model": "openai/gpt-5.4",
       "reasoningEffort": "high",
       "fallback_models": [
         { "model": "anthropic/claude-opus-4-6" },
-        { "model": "deepseek/deepseek-r1" }
+        { "model": "google/gemini-2.5-pro" }
       ]
     },
     "explore": {
-      "model": "google/gemini-2.5-flash",
-      "fallback_models": ["openai/gpt-4.1-mini", "anthropic/claude-haiku-3.5"]
+      "model": "google/gemini-3-flash",
+      "temperature": 0.1
     },
     "librarian": {
-      "model": "google/gemini-2.5-flash",
-      "fallback_models": ["openai/gpt-4.1-mini"]
+      "model": "minimax/minimax-m2.7"
+    },
+    "general": {
+      "model": "anthropic/claude-sonnet-4-6"
+    }
+  },
+
+  "fallback_models": [
+    "anthropic/claude-sonnet-4-6",
+    { "model": "openai/gpt-4.1", "reasoningEffort": "medium" },
+    { "model": "google/gemini-2.5-pro", "temperature": 0.2 }
+  ]
+}
+```
+
+### Top-level options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `disabled_mcps` | `string[]` | `[]` | Removes MCP entries by name after MCP merge |
+| `disabled_agents` | `string[]` | `[]` | Removes merged agent entries by name |
+| `disabled_tools` | `string[]` | `[]` | Prevents bundled tools from being registered |
+| `hashline_edit` | `boolean` | `true` | Enables `hashline_edit` and the `tool.execute.after` read/write post-processing |
+| `model_fallback` | `boolean` | `false` | Enables provider discovery and fallback-chain resolution |
+| `websearch.provider` | `"exa" \| "tavily"` | `"exa"` | Selects the built-in `websearch` backend |
+| `agents` | `Record<string, AgentModelConfig>` | `{}` | Per-agent model and parameter overrides |
+| `fallback_models` | `string \| (string \| FallbackModelObject)[]` | — | Global fallback chain tried after any per-agent fallback chain |
+
+## Built-in agents
+
+The plugin installs these agents into the final OpenCode config:
+
+| Agent | Mode | Role | Notes |
+|---|---|---|---|
+| `bytes` | Primary | End-to-end coding agent | Respects the model selected in the OpenCode UI |
+| `explore` | Subagent | Read-only codebase search | Optimized for fast, parallel discovery |
+| `oracle` | Subagent | Read-only reasoning advisor | Used for architecture, hard debugging, and self-review |
+| `librarian` | Subagent | Read-only external research | Focused on docs, remote repos, and usage examples |
+| `general` | Subagent | Write-capable implementation executor | Best for well-scoped multi-file execution |
+
+Additional merge behavior:
+
+- `default_agent` is set to `bytes` when the user did not already set one
+- user-defined agents override built-in agents with the same name
+- user agents with `disable: true` stay present but disabled
+- names listed in `disabled_agents` are removed after merge
+- built-in `build` and `plan` are marked disabled unless configured explicitly by the user
+
+### Runtime resource injection
+
+Each enabled agent prompt is extended with an `<available_resources>` section generated from the final merged runtime state. That section includes:
+
+- enabled bundled tools
+- enabled MCP servers
+- enabled peer agents
+
+This means config changes affect both actual availability and the resources agents see in their prompts.
+
+## Per-agent model configuration
+
+The `agents` field accepts a record keyed by agent name.
+
+```jsonc
+{
+  "agents": {
+    "oracle": {
+      "model": "openai/gpt-5.4",
+      "reasoningEffort": "high"
+    },
+    "explore": {
+      "model": "google/gemini-3-flash",
+      "temperature": 0.1
     },
     "general": {
       "model": "anthropic/claude-sonnet-4-6",
@@ -446,14 +153,213 @@ Best when: You have multiple provider API keys and want automatic failover.
 }
 ```
 
-- Each agent tries its primary model first
-- If the provider is unavailable, per-agent `fallback_models` are tried in order
-- If nothing matches, the global `fallback_models` chain provides a last resort
-- Provider discovery and fallback resolution are disabled by default. Set `model_fallback: true` to enable.
+### Agent model fields
 
-### Minimal (no agent model overrides)
+| Field | Type | Description |
+|---|---|---|
+| `model` | `string` | Model identifier in `provider/model` format |
+| `reasoningEffort` | `string` | OpenAI reasoning override such as `low`, `medium`, or `high` |
+| `temperature` | `number` | Agent temperature override |
+| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain tried before the global chain |
 
-The plugin works without any agent model configuration. All agents use the default model from your OpenCode config, and the `chat.params` hook still applies correct thinking/reasoning parameters automatically.
+### `bytes` model behavior
+
+`bytes` does not set its runtime model from plugin config. If you set `agents.bytes.model`, it only affects prompt variant selection, not the actual model used for the primary conversation. The actual runtime model still comes from the OpenCode UI or the main OpenCode config.
+
+### Subagent model behavior
+
+For `explore`, `oracle`, `librarian`, and `general`, the configured `model` is passed through as the subagent model hint and runtime assignment target.
+
+## Model recommendations by role
+
+The plugin works with any provider/model pair OpenCode exposes, but the agent roles favor different tradeoffs.
+
+### `bytes`
+
+- leave unconfigured in plugin config in most setups
+- choose the primary model in OpenCode UI
+- use a strong general-purpose coding model with good reasoning and large context
+
+### `oracle`
+
+- prioritize the strongest reasoning model available
+- use a different provider than `bytes` when possible for a true second opinion
+- common fit: OpenAI flagship reasoning, Anthropic flagship reasoning, or Gemini Pro-class models
+
+### `explore`
+
+- prioritize speed and low cost
+- lower temperature is usually useful for deterministic search behavior
+- common fit: flash/mini/nano/haiku-class models with reliable tool calling
+
+### `librarian`
+
+- prioritize fast document reading and summarization
+- similar cost/speed profile to `explore`
+- common fit: flash/mini/haiku-class models
+
+### `general`
+
+- prioritize solid code generation over premium reasoning
+- best used with a strong mid-tier coding model
+- common fit: Sonnet-class, GPT mid-tier, Gemini Pro-class, or similarly capable coding models
+
+## Model fallback resolution
+
+`model_fallback` controls provider-aware model resolution. It is disabled by default and only runs when set to `true`.
+
+### What happens when enabled
+
+At startup, the plugin calls `client.provider.list()` and builds a map of connected providers and available models. For each configured agent model, resolution proceeds in this order:
+
+1. primary agent model
+2. per-agent `fallback_models`
+3. global `fallback_models`
+4. OpenCode default behavior if nothing resolves
+
+If provider discovery fails or returns nothing, the plugin skips fallback resolution and uses the static config as-is.
+
+### Fallback chain formats
+
+```jsonc
+{
+  "fallback_models": "openai/gpt-4.1"
+}
+```
+
+```jsonc
+{
+  "fallback_models": [
+    "anthropic/claude-sonnet-4-6",
+    "google/gemini-2.5-pro"
+  ]
+}
+```
+
+```jsonc
+{
+  "fallback_models": [
+    { "model": "openai/gpt-4.1", "reasoningEffort": "medium" },
+    { "model": "google/gemini-2.5-pro", "temperature": 0.2 }
+  ]
+}
+```
+
+### Availability checks
+
+The resolver checks both:
+
+- provider connectivity
+- model availability within that provider
+
+Exact model IDs are preferred, and provider-scoped prefix matching allows date-suffixed variants such as `anthropic/claude-sonnet-4-6-20260401` to satisfy `anthropic/claude-sonnet-4-6`.
+
+Models without a provider prefix cannot be validated against provider discovery, so they are treated as available.
+
+### Fallback-specific overrides
+
+When a fallback entry includes `reasoningEffort` or `temperature`, those values apply only when that fallback entry is the model that resolves.
+
+## Runtime model parameter adaptation
+
+The `chat.params` hook runs on every model call and uses the actual runtime model family, not just config-time hints.
+
+| Runtime family | Behavior |
+|---|---|
+| Claude | Applies `thinking` defaults for `bytes`, `oracle`, and `general` when the model reports reasoning support; strips OpenAI-only options |
+| OpenAI | Applies `reasoningEffort` defaults for `bytes`, `oracle`, and `general` when the model reports reasoning support; strips Claude-only options |
+| Gemini / other | Strips provider-specific reasoning options |
+| `explore` / `librarian` | No default thinking or reasoning config is applied |
+
+### Default runtime behavior
+
+- Claude budgets: `bytes` 32K, `oracle` 32K, `general` 16K
+- OpenAI reasoning defaults: `bytes` medium, `oracle` high, `general` medium
+- user `temperature` overrides are applied from `agents.<name>.temperature`
+- user `reasoningEffort` overrides are applied for OpenAI-family models
+
+## Built-in MCP servers
+
+| Server | Auth | Notes |
+|---|---|---|
+| `websearch` (`exa`) | Optional `EXA_API_KEY` | Default provider; works without a key |
+| `websearch` (`tavily`) | Required `TAVILY_API_KEY` | Omitted entirely when the key is missing |
+| `context7` | Optional `CONTEXT7_API_KEY` | Adds bearer auth when present |
+| `grep_app` | None | Hosted MCP for GitHub code search |
+
+## Bundled tools
+
+| Tool | Purpose | Notes |
+|---|---|---|
+| `hashline_edit` | Precise anchored edits | Uses `LINE#ID` anchors derived from `read` output |
+| `ast_grep_search` | AST-aware structural search | Requires complete AST-node patterns |
+| `ast_grep_replace` | AST-aware structural rewrite | Dry-run unless `dryRun: false` |
+| `grep` | Regex content search | Supports `content`, `files_with_matches`, and `count` |
+| `glob` | File-name pattern search | Returns matching paths sorted by modification time |
+
+### `hashline_edit`
+
+Typical flow:
+
+1. run `read`
+2. copy exact `LINE#ID` anchors
+3. issue one `hashline_edit` call per file with batched edits against the same snapshot
+4. re-read before another edit call on that file
+
+Key operations:
+
+- `replace`
+- `append`
+- `prepend`
+- optional `rename`
+- optional `delete`
+
+### `ast_grep_search` and `ast_grep_replace`
+
+Pattern rules:
+
+- patterns must be valid, complete AST nodes
+- `$VAR` matches a single node
+- `$$$` matches multiple nodes
+
+Examples:
+
+```text
+console.log($MSG)
+export async function $NAME($$$) { $$$ }
+def $FUNC($$$)
+```
+
+Supported languages:
+
+`bash`, `c`, `cpp`, `csharp`, `css`, `elixir`, `go`, `haskell`, `html`, `java`, `javascript`, `json`, `kotlin`, `lua`, `nix`, `php`, `python`, `ruby`, `rust`, `scala`, `solidity`, `swift`, `typescript`, `tsx`, `yaml`
+
+### `grep`
+
+Arguments:
+
+- `pattern` — regex pattern
+- `include` — optional file glob filter
+- `path` — optional search root
+- `output_mode` — `content`, `files_with_matches`, or `count`
+- `head_limit` — optional result cap
+
+### `glob`
+
+Arguments:
+
+- `pattern` — required glob pattern
+- `path` — optional search root
+
+### Tool runtime behavior
+
+- `grep` and `glob` auto-resolve `rg` and install a cached binary when needed
+- `ast_grep_search` and `ast_grep_replace` auto-resolve `sg` and install a cached binary when needed
+- cached binaries live under the platform cache directory for `oc-blackbytes`
+
+## Example configurations
+
+### Minimal
 
 ```jsonc
 {
@@ -464,29 +370,87 @@ The plugin works without any agent model configuration. All agents use the defau
 }
 ```
 
-## Tips and best practices
+### Anthropic primary with OpenAI oracle
 
-1. **Oracle should differ from bytes** — The oracle agent provides a "second opinion" on hard problems. Using the same model as bytes reduces the value of this review. Cross-provider diversity gives you genuinely different reasoning perspectives.
+```jsonc
+{
+  "agents": {
+    "oracle": { "model": "openai/gpt-5.4", "reasoningEffort": "high" },
+    "explore": { "model": "anthropic/claude-haiku-3.5", "temperature": 0.1 },
+    "librarian": { "model": "anthropic/claude-haiku-3.5" },
+    "general": { "model": "anthropic/claude-sonnet-4-6" }
+  }
+}
+```
 
-2. **Don't over-spend on explore/librarian** — These agents do simple search and lookup tasks. Flagship models are wasted here. Use the cheapest model that can reliably follow tool-call instructions.
+### OpenAI primary with Anthropic oracle
 
-3. **General doesn't need flagship models** — The `bytes` agent scopes and plans work before delegating to `general`. A mid-tier coding model is sufficient since the hard thinking is already done.
+```jsonc
+{
+  "agents": {
+    "oracle": { "model": "anthropic/claude-opus-4-6" },
+    "explore": { "model": "openai/gpt-4.1-mini", "temperature": 0.1 },
+    "librarian": { "model": "openai/gpt-4.1-mini" },
+    "general": { "model": "openai/gpt-4.1" }
+  }
+}
+```
 
-4. **Temperature guidance**:
-   - `explore`: Lower temperature (0.0–0.2) for deterministic search results
-   - `oracle`: Default temperature is fine — reasoning models manage this internally
-   - `general`: Default temperature is fine — code generation benefits from some creativity
-   - `librarian`: Default temperature is fine
+### Cost-focused multi-provider mix
 
-5. **You can configure only some agents** — Any agent without explicit config uses the default model with automatic parameter adaptation. You don't need to configure all five.
+```jsonc
+{
+  "agents": {
+    "oracle": { "model": "deepseek/deepseek-r1" },
+    "explore": { "model": "google/gemini-3-flash", "temperature": 0.1 },
+    "librarian": { "model": "google/gemini-3-flash" },
+    "general": { "model": "deepseek/deepseek-chat" }
+  }
+}
+```
 
-6. **Verify with debug logs** — Check `/tmp/oc-blackbytes.log` for `[chat.params]` entries to confirm which model family is detected and what parameters are applied:
-   ```
-   [chat.params] agent=oracle model=openai/o3 family=openai reasoning=true
-   ```
+### With fallback chains
 
-7. **Model names follow OpenCode conventions** — Use the `provider/model` format as shown in your OpenCode provider list. Run `opencode debug config` to see available models.
+```jsonc
+{
+  "model_fallback": true,
+  "fallback_models": [
+    "anthropic/claude-sonnet-4-6",
+    "openai/gpt-4.1",
+    "google/gemini-2.5-pro"
+  ],
+  "agents": {
+    "oracle": {
+      "model": "openai/gpt-5.4",
+      "reasoningEffort": "high",
+      "fallback_models": [
+        { "model": "anthropic/claude-opus-4-6" },
+        { "model": "deepseek/deepseek-r1" }
+      ]
+    },
+    "explore": {
+      "model": "google/gemini-3-flash",
+      "fallback_models": ["openai/gpt-4.1-mini"]
+    },
+    "librarian": {
+      "model": "google/gemini-3-flash",
+      "fallback_models": ["openai/gpt-4.1-mini"]
+    },
+    "general": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "fallback_models": ["openai/gpt-4.1"]
+    }
+  }
+}
+```
 
-8. **Use fallback chains for resilience** — When `model_fallback: true`, the plugin checks provider connectivity at startup and routes agents to alternative models automatically. This is especially useful when you use multiple providers but one may have quota issues or outages.
+## Operational notes
 
-9. **Agents are resource-aware** — Each agent's prompt includes the currently enabled tools, MCP servers, and peer agents. Disabling an MCP or tool via config automatically removes it from agent prompts. User-added MCPs also appear in agent context.
+1. Prefer a different provider for `oracle` than for `bytes` when possible.
+2. Use fast, inexpensive models for `explore` and `librarian`.
+3. Use a solid mid-tier coding model for `general`.
+4. Keep `explore` temperature low when you want deterministic search behavior.
+5. Configure only the agents that need explicit overrides; the rest can inherit OpenCode defaults.
+6. Use `provider/model` identifiers to match OpenCode’s provider list.
+7. Enable `model_fallback` when you want automatic failover across connected providers.
+8. Remember that agents only see enabled tools, MCPs, and peer agents in their injected runtime context.
