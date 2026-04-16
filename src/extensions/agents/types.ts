@@ -1,4 +1,4 @@
-import type { AgentConfig } from "@opencode-ai/sdk"
+import type { AgentConfig } from "@opencode-ai/sdk/v2"
 
 /**
  * Agent mode determises UI model selection behavior.

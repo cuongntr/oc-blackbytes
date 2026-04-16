@@ -1,6 +1,7 @@
 import { resolve } from "node:path"
 import type { PluginInput } from "@opencode-ai/plugin"
 import { type ToolDefinition, tool } from "@opencode-ai/plugin/tool"
+import { assertWithinWorkspace } from "../../../shared/utils"
 import { runRg, runRgCount } from "./cli"
 import { resolveGrepCliWithAutoInstall } from "./constants"
 import { formatCountResult, formatGrepResult } from "./result-formatter"
@@ -40,6 +41,7 @@ export function createGrepTools(ctx: PluginInput): Record<string, ToolDefinition
         const runtimeCtx = context as Record<string, unknown>
         const dir = typeof runtimeCtx.directory === "string" ? runtimeCtx.directory : ctx.directory
         const searchPath = args.path ? resolve(dir, args.path) : dir
+        await assertWithinWorkspace(searchPath, dir)
         const paths = [searchPath]
         const outputMode = args.output_mode ?? "files_with_matches"
         const headLimit = args.head_limit ?? 0

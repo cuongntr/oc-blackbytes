@@ -160,7 +160,8 @@ async function appendWriteHashlineOutput(output: {
   }
 
   const content = await file.text()
-  const lineCount = content === "" ? 0 : content.split("\n").length
+  const lines = content.split("\n")
+  const lineCount = content === "" ? 0 : content.endsWith("\n") ? lines.length - 1 : lines.length
   output.output = `${WRITE_SUCCESS_MARKER} ${lineCount} lines written.`
 }
 

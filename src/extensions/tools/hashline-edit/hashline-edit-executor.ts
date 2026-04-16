@@ -1,5 +1,6 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import type { ToolContext } from "@opencode-ai/plugin/tool"
+import { assertWithinWorkspace } from "../../../shared/utils"
 import { countLineDiffs, generateUnifiedDiff } from "./diff-utils"
 import { applyHashlineEditsWithReport } from "./edit-operations"
 import { canonicalizeFileText, restoreFileText } from "./file-text-canonicalization"
@@ -87,6 +88,12 @@ export async function executeHashlineEditTool(
 
     if (!deleteMode && (!args.edits || !Array.isArray(args.edits) || args.edits.length === 0)) {
       return "Error: edits parameter must be a non-empty array"
+    }
+
+    // Workspace boundary validation
+    await assertWithinWorkspace(filePath, context.directory)
+    if (rename) {
+      await assertWithinWorkspace(rename, context.directory)
     }
 
     const edits = deleteMode ? [] : normalizeHashlineEdits(args.edits)

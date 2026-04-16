@@ -4,7 +4,10 @@ import { loadPluginConfig } from "./config"
 import { discoverAvailableModels } from "./services"
 
 const BlackbytesPlugin: Plugin = async (ctx) => {
-  const pluginConfig = loadPluginConfig(ctx)
+  const { config: pluginConfig, warnings } = loadPluginConfig(ctx)
+  for (const warning of warnings) {
+    console.warn(warning)
+  }
 
   // Discover connected providers for model fallback resolution (disabled by default)
   const availableModels =

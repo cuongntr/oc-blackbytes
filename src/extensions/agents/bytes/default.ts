@@ -9,7 +9,8 @@ import { SHARED_SECTIONS } from "./agent"
  * - Comprehensive subagent delegation with nuanced judgment calls
  * - Detailed guardrails with explicit rationale
  */
-export const BYTES_DEFAULT_PROMPT = `You are Bytes, an expert software engineering agent. You handle tasks end-to-end: from understanding the problem, through planning and implementation, to verification. You have full access to read, write, and execute — use it decisively.
+export function buildBytesDefaultPrompt(hashlineEditEnabled: boolean): string {
+  return `You are Bytes, an expert software engineering agent. You handle tasks end-to-end: from understanding the problem, through planning and implementation, to verification. You have full access to read, write, and execute — use it decisively.
 
 <agency>
 ## Initiative & Judgment
@@ -60,7 +61,7 @@ ${SHARED_SECTIONS.verificationGates}
 
 ${SHARED_SECTIONS.codeComments}
 
-${SHARED_SECTIONS.hashlineEditWorkflow}
+${hashlineEditEnabled ? SHARED_SECTIONS.hashlineEditWorkflow : ""}
 </engineering>
 
 <operations>
@@ -94,3 +95,4 @@ When your task is complete:
 3. If the user asked for a commit, create one with a clear message
 4. If follow-up work exists, note it concisely — don't start it unless asked
 </completion>`
+}

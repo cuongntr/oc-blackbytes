@@ -1,5 +1,7 @@
+import { resolve } from "node:path"
 import type { PluginInput } from "@opencode-ai/plugin"
 import { type ToolDefinition, tool } from "@opencode-ai/plugin/tool"
+import { assertWithinWorkspace } from "../../../shared/utils"
 import { runSg } from "./cli"
 import { CLI_LANGUAGES } from "./language-support"
 import { formatReplaceResult, formatSearchResult } from "./result-formatter"
@@ -60,6 +62,11 @@ export function createAstGrepTools(ctx: PluginInput): Record<string, ToolDefinit
     },
     execute: async (args, context) => {
       try {
+        if (args.paths) {
+          for (const p of args.paths) {
+            await assertWithinWorkspace(resolve(ctx.directory, p), ctx.directory)
+          }
+        }
         const result = await runSg({
           pattern: args.pattern,
           lang: args.lang as CliLanguage,
@@ -105,6 +112,11 @@ export function createAstGrepTools(ctx: PluginInput): Record<string, ToolDefinit
     },
     execute: async (args, context) => {
       try {
+        if (args.paths) {
+          for (const p of args.paths) {
+            await assertWithinWorkspace(resolve(ctx.directory, p), ctx.directory)
+          }
+        }
         const result = await runSg({
           pattern: args.pattern,
           rewrite: args.rewrite,

@@ -76,22 +76,22 @@ describe("config loader", () => {
 
     process.env.OPENCODE_CONFIG_DIR = dir
 
-    expect(
-      loadPluginConfig(
-        // biome-ignore lint/suspicious/noExplicitAny: plugin input is unused by this loader
-        {} as any,
-      ),
-    ).toEqual({ hashline_edit: true })
+    const { config, warnings } = loadPluginConfig(
+      // biome-ignore lint/suspicious/noExplicitAny: plugin input is unused by this loader
+      {} as any,
+    )
+    expect(config).toEqual({ hashline_edit: true })
+    expect(warnings).toEqual([])
   })
 
   it("returns an empty config when no plugin config file exists", () => {
     process.env.OPENCODE_CONFIG_DIR = createTempDir()
 
-    expect(
-      loadPluginConfig(
-        // biome-ignore lint/suspicious/noExplicitAny: plugin input is unused by this loader
-        {} as any,
-      ),
-    ).toEqual({})
+    const { config, warnings } = loadPluginConfig(
+      // biome-ignore lint/suspicious/noExplicitAny: plugin input is unused by this loader
+      {} as any,
+    )
+    expect(config).toEqual({})
+    expect(warnings.length).toBeGreaterThan(0)
   })
 })

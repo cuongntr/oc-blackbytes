@@ -26,7 +26,7 @@ The Oracle code review of oc-blackbytes identified correctness bugs, security ga
 ## 2. Scope Framing
 
 **In scope:**
-- P0: Workspace boundary enforcement for grep, glob, hashline_edit tools
+- P0: Workspace boundary enforcement for grep, glob, hashline_edit, ast-grep tools
 - P0: Fix glob non-rg Unix fallback bug
 - P0: Config loading — surface errors, fix desktop config dir resolution
 - P1: Idempotent runtime context injection
@@ -53,7 +53,7 @@ The Oracle code review of oc-blackbytes identified correctness bugs, security ga
 
 | Component | File(s) | Role |
 |-----------|---------|------|
-| Workspace boundary | `grep/tools.ts`, `glob/tools.ts`, `hashline-edit/hashline-edit-executor.ts`, `hashline-edit/tools.ts` | Tool path resolution and execution |
+| Workspace boundary | `grep/tools.ts`, `glob/tools.ts`, `hashline-edit/hashline-edit-executor.ts`, `hashline-edit/tools.ts`, `ast-grep/search.ts`, `ast-grep/replace.ts` | Tool path resolution and execution |
 | Glob CLI | `glob/cli.ts`, `glob/constants.ts` | File pattern matching with rg/find/PowerShell backends |
 | Config loader | `config/loader.ts`, `shared/opencode/opencode-config-dir.ts` | Plugin config discovery and validation |
 | Runtime context | `extensions/agents/utils/runtime-context.ts`, `handlers/config-handler/agent-config-handler.ts` | Prompt injection with available resources |
@@ -77,10 +77,10 @@ The Oracle code review of oc-blackbytes identified correctness bugs, security ga
 ### WS1: Workspace Boundary Enforcement
 **Purpose:** Prevent bundled tools from reading/writing outside the project directory.
 
-**What it must produce:**
 - A shared `assertWithinWorkspace(resolvedPath, workspaceRoot)` utility
-- Integration into `grep/tools.ts`, `glob/tools.ts`, `hashline-edit/hashline-edit-executor.ts`
+- Integration into `grep/tools.ts`, `glob/tools.ts`, `hashline-edit/hashline-edit-executor.ts`, `ast-grep/search.ts`, `ast-grep/replace.ts`
 - Validation of both `filePath` and `rename` paths in hashline-edit
+- Validation of `paths` parameter in ast-grep tools
 - Tests covering traversal attempts (`../../etc/passwd`, symlinks, absolute paths outside workspace)
 
 **Key considerations:**
@@ -111,8 +111,7 @@ The Oracle code review of oc-blackbytes identified correctness bugs, security ga
 ### WS3: Config Loading Improvements
 **Purpose:** Surface config errors visibly and use correct config dir resolution.
 
-**What it must produce:**
-- `loadPluginConfig` uses `input` parameter to determine binary type
+- `loadPluginConfig` passes `input.client` to `getOpenCodeConfigDir()` as the `binary` parameter. If `input.client` is not a recognized binary name, defaults to `"opencode"` (CLI behavior). This is a best-effort improvement — full desktop detection may require OpenCode API clarification.
 - Invalid config produces a visible warning (not just silent log-to-file)
 - Desktop/Tauri config dir is resolved when running under desktop runtime
 
@@ -144,7 +143,7 @@ The Oracle code review of oc-blackbytes identified correctness bugs, security ga
 ### WS5: Dead Code Removal
 **Purpose:** Remove schema fields and code that create a misleading API surface.
 
-**What it must produce:**
+- Verify schema uses non-strict parsing (`.passthrough()` or default object behavior), then remove dead fields from `oc-blackbytes-config.ts` schema
 - Remove `disabled_hooks` from schema (no consumers)
 - Remove `mcp_env_alllowlist` from schema (typo, no consumers)
 - Remove `auto_update` from schema (no consumers)
@@ -164,13 +163,12 @@ The Oracle code review of oc-blackbytes identified correctness bugs, security ga
 ### WS6: Bug Fixes
 **Purpose:** Fix specific correctness bugs identified in the review.
 
-**What it must produce:**
 - Fix line count off-by-one in `tool-execute-after-handler.ts:163` — handle trailing newline
-- Fix SDK import consistency (`@opencode-ai/sdk` vs `@opencode-ai/sdk/v2`) — audit and standardize
+- Standardize SDK imports to `@opencode-ai/sdk/v2` across all files (this is the v2 subpath export; `@opencode-ai/sdk` is the root package)
 
 **Key considerations:**
 - Line count fix: `content.endsWith("\n") ? content.split("\n").length - 1 : content.split("\n").length`
-- SDK imports: need to determine which is canonical. Check `package.json` exports and OpenCode docs.
+- SDK imports: files using `@opencode-ai/sdk` should be updated to `@opencode-ai/sdk/v2` for type imports (Config, McpRemoteConfig, etc.). Verify by checking that `@opencode-ai/sdk/v2` resolves correctly before bulk migration.
 
 ### WS7: Test Coverage
 **Purpose:** Add tests for critical paths that currently lack coverage.
@@ -264,7 +262,7 @@ WS6 (Bug Fixes) ────────────┘
 
 ### Ambiguities
 - **How does OpenCode surface plugin warnings?** The plugin API may not have a warning channel. May need to fall back to stderr or a visible log path.
-- **Which SDK import is canonical?** `@opencode-ai/sdk` vs `@opencode-ai/sdk/v2` — need to check package exports.
+- ~~**Which SDK import is canonical?** `@opencode-ai/sdk` vs `@opencode-ai/sdk/v2` — need to check package exports.~~ → **Decided:** `@opencode-ai/sdk/v2` is canonical for type imports (v2 subpath export).
 - **Does OpenCode sandbox tool paths at runtime?** If yes, our checks are defense-in-depth. If no, they are the only protection.
 
 ### Assumptions
@@ -349,7 +347,7 @@ WS6 (Bug Fixes) ────────────┘
 ## 10. Task Graph Mapping
 
 ### Top-level tasks (from workstreams)
-- **WS1 → `security/workspace-boundary`**: Shared utility + integration into 3 tool modules
+- **WS1 → `security/workspace-boundary`**: Shared utility + integration into 4 tool modules (grep, glob, hashline-edit, ast-grep)
 - **WS2 → `fix/glob-fallback`**: Binary resolution fix in glob module
 - **WS3 → `fix/config-loading`**: Loader improvements
 - **WS4 → `fix/prompt-injection`**: Idempotency + conditional sections
@@ -359,17 +357,18 @@ WS6 (Bug Fixes) ────────────┘
 
 ### Child task breakdown
 
-**WS1 — 3 child tasks:**
+**WS1 — 4 child tasks:**
 1. Create `src/shared/utils/workspace-boundary.ts` utility
 2. Integrate into `grep/tools.ts` and `glob/tools.ts`
 3. Integrate into `hashline-edit/hashline-edit-executor.ts` (filePath + rename)
+4. Integrate into `ast-grep/search.ts` and `ast-grep/replace.ts` (paths parameter)
 
 **WS2 — 2 child tasks:**
 1. Create `glob/find-cli.ts` for `find` binary resolution (separate from grep CLI)
 2. Update `glob/cli.ts` to use find-specific resolution in non-rg path
 
 **WS3 — 2 child tasks:**
-1. Fix `loadPluginConfig` to use `input` parameter for binary type detection
+1. Fix `loadPluginConfig` to pass `input.client` to `getOpenCodeConfigDir()` as the `binary` parameter. If `input.client` is not a recognized binary name, default to `"opencode"` (CLI behavior). This is a best-effort improvement — full desktop detection may require OpenCode API clarification.
 2. Add structured warning return for invalid/unparseable config
 
 **WS4 — 2 child tasks:**
@@ -377,12 +376,12 @@ WS6 (Bug Fixes) ────────────┘
 2. Gate hashline-edit prompt sections on config in all agent prompt variants
 
 **WS5 — 2 child tasks:**
-1. Remove dead fields from `oc-blackbytes-config.ts` schema
+1. Verify schema uses non-strict parsing (`.passthrough()` or default object behavior), then remove dead fields from `oc-blackbytes-config.ts` schema
 2. Remove unused functions from `permission-compat.ts`
 
 **WS6 — 2 child tasks:**
 1. Fix line count off-by-one in `tool-execute-after-handler.ts`
-2. Audit and standardize SDK imports
+2. Standardize SDK imports to `@opencode-ai/sdk/v2` across all files
 
 **WS7 — 4 child tasks:**
 1. Tests for workspace boundary utility
@@ -396,10 +395,10 @@ WS6 (Bug Fixes) ────────────┘
 - All WS1-6 → WS7 (tests verify completed work)
 
 ### Context each child task must carry
-- **WS1 tasks:** Workspace root is `directory` from tool context. Use `realpath` with new-file fallback. Reject with clear error message. Normalize paths before comparison.
+- **WS1 tasks:** Workspace root is `directory` from tool context. Use `realpath` with new-file fallback. Reject with clear error message. Normalize paths before comparison. Applies to grep, glob, hashline-edit, and ast-grep tools.
 - **WS2 tasks:** Bug is at `glob/cli.ts:122-126` — `cli.path` is grep binary, not `find`. `buildFindArgs` syntax is correct, only binary path needs fixing.
-- **WS3 tasks:** Current code at `config/loader.ts:28-30` ignores `input`. Desktop resolution exists at `opencode-config-dir.ts:79-106`.
+- **WS3 tasks:** Current code at `config/loader.ts:28-30` ignores `input`. Desktop resolution exists at `opencode-config-dir.ts:79-106`. Pass `input.client` as `binary` param, default to `"opencode"` if unrecognized.
 - **WS4 tasks:** Marker tag is `<available_resources>`. Check with `includes()`. Hashline config available via plugin config `hashline_edit` field.
-- **WS5 tasks:** Dead fields: `disabled_hooks`, `mcp_env_alllowlist`, `auto_update`, `_migrations`. Unused functions: `migrateAgentConfig`, `migrateToolsToPermission`, `createAgentToolAllowlist`.
-- **WS6 tasks:** Line count fix: handle trailing newline in `content.split("\n")`. SDK import audit: determine canonical import path.
+- **WS5 tasks:** Dead fields: `disabled_hooks`, `mcp_env_alllowlist`, `auto_update`, `_migrations`. Unused functions: `migrateAgentConfig`, `migrateToolsToPermission`, `createAgentToolAllowlist`. Verify non-strict Zod parsing before removal.
+- **WS6 tasks:** Line count fix: handle trailing newline in `content.split("\n")`. SDK imports: standardize to `@opencode-ai/sdk/v2` for type imports.
 - **WS7 tasks:** Use `bun:test`. Follow existing test patterns in `test/config.test.ts`. Mock as needed.

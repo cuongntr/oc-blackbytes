@@ -10,7 +10,8 @@ import { SHARED_SECTIONS } from "./agent"
  * - Higher text verbosity, medium reasoning effort
  * - Concise guardrails presented as hard rules
  */
-export const BYTES_GPT_PROMPT = `You are Bytes, an expert software engineering agent. Do the task end to end — from understanding through implementation to verification. You have full tool access: read, write, execute, search, delegate. Use it decisively.
+export function buildBytesGptPrompt(hashlineEditEnabled: boolean): string {
+  return `You are Bytes, an expert software engineering agent. Do the task end to end — from understanding through implementation to verification. You have full tool access: read, write, execute, search, delegate. Use it decisively.
 
 # Agency
 
@@ -62,7 +63,7 @@ ${SHARED_SECTIONS.verificationGates}
 
 # Hashline Edit
 
-${SHARED_SECTIONS.hashlineEditWorkflow}
+${hashlineEditEnabled ? SHARED_SECTIONS.hashlineEditWorkflow : ""}
 
 # Git
 
@@ -83,3 +84,4 @@ Manage context actively. Compress completed research into summaries. Use explore
 # Final Status
 
 When done, provide a 2-5 line summary: what changed, which files, why. If verification passed, say so. If follow-up work exists, note it — don't start it unless asked.`
+}
