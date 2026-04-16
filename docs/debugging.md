@@ -131,6 +131,7 @@ When debugging agent config:
 3. Confirm user agents with `disable: true` remain present but disabled.
 4. Confirm names listed in `disabled_agents` are removed after merge.
 5. Confirm OpenCode's `build` and `plan` agents are disabled unless they were configured explicitly.
+6. Confirm per-agent model overrides from `agents` config are applied (model, reasoningEffort, temperature).
 
 ## Tool debugging
 
@@ -185,6 +186,24 @@ The `chat.headers` hook injects `x-initiator: agent` for:
 - `github-copilot-enterprise`
 
 If the header is missing, confirm the provider ID and whether the model is using the `@ai-sdk/github-copilot` API path, which bypasses this injection.
+
+## Chat params debugging
+
+The `chat.params` hook adapts model parameters at runtime based on the actual model family and agent role.
+
+The hook detects the model family using:
+
+1. Provider ID (most reliable): `anthropic` → Claude, `openai` → OpenAI, `google`/`google-vertex` → Gemini
+2. Model name heuristics (for `github-copilot` and proxy providers): checks for `claude-*`, `gpt-*`, `gemini-*` in the model ID
+
+Parameter application:
+
+- **Claude**: Applies `thinking` config with per-agent budget tokens (bytes: 32K, oracle: 32K, general: 16K) when the model supports reasoning. Strips `reasoningEffort` and `textVerbosity`.
+- **OpenAI**: Applies `reasoningEffort` per agent (oracle: `"high"`, bytes/general: `"medium"`) when the model supports reasoning. Strips `thinking`.
+- **Gemini / Other**: Strips all provider-specific options.
+- **explore / librarian**: No thinking or reasoning defaults applied (speed priority).
+
+If parameter adaptation looks wrong, inspect the log file for `[chat.params]` entries which show the detected agent, model, family, and reasoning capability.
 
 ## Unit tests
 

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-16
+
+### Added
+
+- Per-agent model configuration via `agents` config field with `model`, `reasoningEffort`, `temperature`, and `fallback_models` per agent
+- `chat.params` hook for runtime model parameter adaptation — detects the actual model family at inference time and applies provider-correct thinking/reasoning config per agent
+- Model detection utilities for Claude, Kimi, and DeepSeek model families
+- `FallbackModelsSchema` and `AgentModelConfigSchema` for flexible fallback chain configuration (reserved for future resolution)
+
+### Changed
+
+- Agent factory functions receive the configured model hint, enabling correct prompt variant selection based on the actual model family
+- Documentation describes per-agent model configuration, runtime parameter adaptation, and `chat.params` hook behavior
+
 ## [0.2.0] - 2025-04-16
 
 ### Added

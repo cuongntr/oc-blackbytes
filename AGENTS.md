@@ -28,10 +28,10 @@ Linting and formatting use Biome. Run `bun run check` before committing.
 ```
 src/
 ├── index.ts                    # Plugin entry — exports BlackbytesPlugin
-├── bootstrap.ts                # Hook assembly — creates config, chat.headers, tool, and tool.execute.after hooks
+├── bootstrap.ts                # Hook assembly — creates config, chat.headers, chat.params, tool, and tool.execute.after hooks
 ├── config/                     # Config loading and schema validation
 │   ├── loader.ts               # loadConfigFromPath, loadPluginConfig
-│   └── schema/                 # Zod schemas (config, MCP names, websearch)
+│   └── schema/                 # Zod schemas (config, MCP names, websearch, per-agent model config)
 ├── compat/                     # Compatibility layers
 ├── integrations/               # External/runtime integrations
 ├── services/                   # Reserved service modules
@@ -42,6 +42,7 @@ src/
 │   └── utils/                  # Buffered file logger, JSONC parser
 ├── handlers/                   # Hook handlers
 │   ├── chat-headers-handler.ts   # chat.headers hook — injects x-initiator header for Copilot
+│   ├── chat-params-handler.ts    # chat.params hook — runtime model parameter adaptation per agent+model
 │   ├── tool-handler.ts           # tool hook — registers bundled local tools
 │   ├── tool-execute-after-handler.ts # tool.execute.after hook — post-processes read/write output
 │   └── config-handler/           # config hook — orchestrates MCP and agent merging
@@ -66,8 +67,9 @@ src/
 
 - **`config/`** — Discovers and validates `oc-blackbytes.json[c]` from the OpenCode config directory. Schema defined with Zod v4.
 - **`shared/`** — Constants, buffered file logger (writes to `/tmp/oc-blackbytes.log`), JSONC parsing utilities, OpenCode config dir resolution for CLI and Tauri desktop.
-- **`handlers/config-handler/`** — Orchestrates the `config` hook. Merges built-in MCPs and agents with user-defined config, respects `disabled_mcps` / `disabled_agents`, preserves explicit user disables, and sets `default_agent` to `bytes` when appropriate.
+- **`handlers/config-handler/`** — Orchestrates the `config` hook. Merges built-in MCPs and agents with user-defined config, respects `disabled_mcps` / `disabled_agents`, preserves explicit user disables, applies per-agent model overrides from the `agents` config field, and sets `default_agent` to `bytes` when appropriate.
 - **`handlers/chat-headers-handler.ts`** — Handles the `chat.headers` hook. Injects `x-initiator: agent` header for GitHub Copilot and GitHub Copilot Enterprise providers.
+- **`handlers/chat-params-handler.ts`** — Handles the `chat.params` hook. Detects the actual model family at runtime and applies provider-correct thinking/reasoning config per agent, stripping incompatible options for other providers.
 - **`handlers/tool-handler.ts`** — Registers `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`, filtered by `disabled_tools` and `hashline_edit`.
 - **`handlers/tool-execute-after-handler.ts`** — Rewrites `read` output into `LINE#ID|content` anchors and normalizes successful `write` output into line-count summaries when hashline editing is enabled.
 - **`extensions/mcp/`** — Factory for built-in MCP servers: websearch (Exa/Tavily), Context7, grep.app. Controlled by plugin config.
@@ -81,8 +83,9 @@ src/
 3. Loads `oc-blackbytes.json[c]` from the resolved OpenCode config directory
 4. Returns a `config` hook that provisions MCP servers and built-in agents into OpenCode's config
 5. Returns a `chat.headers` hook that injects `x-initiator: agent` for supported GitHub Copilot providers
-6. Returns a `tool` hook that registers bundled local tools
-7. Returns a `tool.execute.after` hook that post-processes `read` and `write` output for hashline editing workflows
+6. Returns a `chat.params` hook that adapts model parameters at runtime based on actual model family and agent role
+7. Returns a `tool` hook that registers bundled local tools
+8. Returns a `tool.execute.after` hook that post-processes `read` and `write` output for hashline editing workflows
 
 ## Important
 

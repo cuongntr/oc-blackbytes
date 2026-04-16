@@ -4,17 +4,20 @@ An OpenCode plugin for workflow automation. It provisions built-in MCP servers, 
 
 ## What the plugin provides
 
-The plugin wires four OpenCode hook surfaces:
+The plugin wires five OpenCode hook surfaces:
 
 - `config` — merges built-in MCP servers and agents into the active OpenCode config
 - `chat.headers` — injects `x-initiator: agent` for supported GitHub Copilot providers
 - `tool` — registers bundled local tools for structured editing and codebase search
 - `tool.execute.after` — post-processes `read`/`write` output when hashline editing is enabled
+- `chat.params` — adapts model parameters at runtime based on actual model family and agent role
 
 ## Features
 
 - **Built-in MCP provisioning** — configures `websearch`, `context7`, and `grep_app`
 - **Agent installation** — provides `bytes` as the default primary agent plus `explore`, `oracle`, `librarian`, and `general`
+- **Per-agent model configuration** — each agent can target a specific model with tailored reasoning effort, temperature, and fallback chains via the `agents` config field
+- **Runtime model parameter adaptation** — the `chat.params` hook detects the actual model family at inference time and applies provider-correct parameters (Claude thinking, OpenAI reasoning effort) while stripping incompatible options
 - **Local tool registration** — exposes `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`
 - **Hashline editing workflow** — transforms `read` output into `LINE#ID` anchors and turns successful `write` output into concise line-count summaries
 - **Config merging pipeline** — merges built-in MCPs and agents with user-defined config while preserving explicit user disables
@@ -73,6 +76,13 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory.
 
   "websearch": {
     "provider": "exa"
+  },
+
+  "agents": {
+    "oracle": { "model": "openai/gpt-5.4", "reasoningEffort": "high" },
+    "explore": { "model": "google/gemini-3-flash", "temperature": 0.1 },
+    "librarian": { "model": "minimax/minimax-m2.7" },
+    "general": { "model": "anthropic/claude-sonnet-4-6" }
   }
 }
 ```
@@ -90,6 +100,8 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory.
 | `model_fallback` | `boolean` | `false` | Recognized by the schema for model compatibility workflows. |
 | `auto_update` | `boolean` | `false` | Recognized by the schema for maintenance workflows. |
 | `websearch.provider` | `"exa" \| "tavily"` | `"exa"` | Selects the built-in `websearch` MCP backend. |
+| `agents` | `Record<string, AgentModelConfig>` | `{}` | Per-agent model configuration overrides. See [Per-agent model configuration](#per-agent-model-configuration). |
+| `fallback_models` | `string \| (string \| FallbackModelObject)[]` | — | Global fallback model chain (reserved for future use). |
 | `_migrations` | `string[]` | `[]` | Internal migration bookkeeping. |
 
 ## Built-in agents
@@ -105,6 +117,54 @@ The plugin merges these agents into the OpenCode config and sets `default_agent`
 | `general` | Subagent | Write-capable execution agent for multi-file implementation, migrations, and cross-layer changes. |
 
 The merge behavior also preserves explicit user disables (`disable: true`), removes entries listed in `disabled_agents`, uses the OpenCode `permission` map format, and marks OpenCode's default `build` and `plan` agents as disabled unless the user configures them directly.
+
+### Per-agent model configuration
+
+The `agents` field accepts a record of agent names to model configuration objects:
+
+```jsonc
+{
+  "agents": {
+    "oracle": {
+      "model": "openai/gpt-5.4",
+      "reasoningEffort": "high"
+    },
+    "explore": {
+      "model": "google/gemini-3-flash",
+      "temperature": 0.1
+    },
+    "librarian": {
+      "model": "minimax/minimax-m2.7"
+    },
+    "general": {
+      "model": "anthropic/claude-sonnet-4-6"
+    }
+  }
+}
+```
+
+Each agent model config supports:
+
+| Field | Type | Description |
+|---|---|---|
+| `model` | `string` | Model identifier (e.g., `"openai/gpt-5.4"`). Drives prompt variant selection and, for subagents, sets the model hint. |
+| `reasoningEffort` | `string` | Override reasoning effort level for OpenAI reasoning models (`"low"`, `"medium"`, `"high"`). |
+| `temperature` | `number` | Override temperature for the agent. |
+| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain (reserved for future use). |
+
+When a `model` is specified for a subagent, the factory selects the appropriate prompt variant for that model family (Claude, GPT, or Gemini). The primary agent (`bytes`) uses the model hint for prompt selection only — the actual model is determined by the OpenCode UI selection.
+
+## Runtime model parameter adaptation
+
+The `chat.params` hook fires on every LLM call and applies provider-correct parameters based on the actual runtime model:
+
+| Model Family | Behavior |
+|---|---|
+| **Claude** (Anthropic) | Applies extended thinking with per-agent budget tokens (bytes: 32K, oracle: 32K, general: 16K) when the model supports reasoning. Strips `reasoningEffort` and `textVerbosity`. |
+| **GPT** (OpenAI) | Applies `reasoningEffort` per agent (oracle: `"high"`, bytes/general: `"medium"`) when the model supports reasoning. Strips `thinking`. |
+| **Gemini / Other** | Strips all provider-specific options (`thinking`, `reasoningEffort`, `textVerbosity`). |
+
+User overrides from the `agents` config take priority over these defaults. Agents without thinking defaults (`explore`, `librarian`) skip reasoning configuration for speed and cost efficiency.
 
 ## Built-in MCP servers
 
@@ -235,9 +295,9 @@ For CLI usage, `OPENCODE_CONFIG_DIR` overrides the default OpenCode config direc
 oc-blackbytes/
 ├── src/
 │   ├── index.ts                    # Plugin entry
-│   ├── bootstrap.ts                # Hook assembly
-│   ├── config/                     # JSONC config loading + Zod schemas
-│   ├── handlers/                   # Hook handlers for config, tools, chat headers, and post-processing
+│   ├── bootstrap.ts                # Hook assembly (config, chat.headers, chat.params, tool, tool.execute.after)
+│   ├── config/                     # JSONC config loading + Zod schemas (including per-agent model config)
+│   ├── handlers/                   # Hook handlers for config, tools, chat headers, chat params, and post-processing
 │   ├── extensions/
 │   │   ├── agents/                 # bytes/explore/oracle/librarian/general agent definitions
 │   │   ├── hooks/                  # Hook-related extension helpers
