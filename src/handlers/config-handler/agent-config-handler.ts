@@ -1,4 +1,5 @@
 import type { AgentConfig } from "@opencode-ai/sdk/v2"
+import type { AgentModelConfig } from "../../config/schema/oc-blackbytes-config"
 import { createBytesAgent } from "../../extensions/agents/bytes"
 import { createExploreAgent } from "../../extensions/agents/explore"
 import { createGeneralAgent } from "../../extensions/agents/general"
@@ -21,25 +22,73 @@ const DEFAULT_AGENT_NAME = "bytes"
 const SUPERSEDED_AGENTS = ["build", "plan"] as const
 
 /**
- * Creates the built-in agent configurations.
+ * Built-in agent names and their factory functions.
+ * Centralized to avoid repetition and ensure consistency.
+ */
+const BUILTIN_AGENT_FACTORIES = {
+  bytes: createBytesAgent,
+  explore: createExploreAgent,
+  oracle: createOracleAgent,
+  librarian: createLibrarianAgent,
+  general: createGeneralAgent,
+} as const
+
+/**
+ * Creates the built-in agent configurations, optionally applying per-agent
+ * model overrides from the plugin configuration.
  *
  * Model parameter handling:
  * - Primary agent (bytes): model param selects prompt variant only;
  *   the returned config does NOT set `model` so it respects the user's UI selection.
  * - Subagents (explore, oracle, librarian, general): model param is passed through.
  *   When empty, OpenCode falls back to the default model.
+ *
+ * Per-agent overrides (from plugin config `agents` field):
+ * - `model`: Passed to factory → selects prompt variant + sets subagent model
+ * - `reasoningEffort`: Applied after factory creation (overrides factory default)
+ * - `temperature`: Applied after factory creation (overrides factory default)
  */
-function createBuiltinAgents(): Record<string, AgentConfig> {
-  // Empty model string: bytes defaults to Claude prompt variant,
-  // subagents use OpenCode's default model resolution
-  const defaultModelHint = ""
+function createBuiltinAgents(
+  agentOverrides?: Record<string, AgentModelConfig>,
+): Record<string, AgentConfig> {
+  const agents: Record<string, AgentConfig> = {}
 
-  return {
-    bytes: createBytesAgent(defaultModelHint),
-    explore: createExploreAgent(defaultModelHint),
-    oracle: createOracleAgent(defaultModelHint),
-    librarian: createLibrarianAgent(defaultModelHint),
-    general: createGeneralAgent(defaultModelHint),
+  // Create each agent using its factory, passing per-agent model if configured
+  for (const [name, factory] of Object.entries(BUILTIN_AGENT_FACTORIES)) {
+    const modelHint = agentOverrides?.[name]?.model ?? ""
+    agents[name] = factory(modelHint)
+  }
+
+  // Apply per-agent parameter overrides on top of factory defaults
+  if (agentOverrides) {
+    applyAgentModelOverrides(agents, agentOverrides)
+  }
+
+  return agents
+}
+
+/**
+ * Applies per-agent model parameter overrides from plugin config.
+ * These override the factory defaults for reasoningEffort and temperature,
+ * allowing users to fine-tune agent behavior without changing the model.
+ */
+function applyAgentModelOverrides(
+  agents: Record<string, AgentConfig>,
+  overrides: Record<string, AgentModelConfig>,
+): void {
+  for (const [name, override] of Object.entries(overrides)) {
+    if (!(name in agents)) continue
+    const agent = agents[name]
+
+    if (override.reasoningEffort !== undefined) {
+      ;(agent as Record<string, unknown>).reasoningEffort = override.reasoningEffort
+      log(`  Agent '${name}': reasoningEffort → ${override.reasoningEffort}`)
+    }
+
+    if (override.temperature !== undefined) {
+      agent.temperature = override.temperature
+      log(`  Agent '${name}': temperature → ${override.temperature}`)
+    }
   }
 }
 
@@ -132,7 +181,7 @@ export function handleAgentConfig(ctx: ConfigContext): void {
   const userDisabledAgentNames = captureUserDisabledAgents(userAgents)
 
   // Merge built-in agents with user-defined agents, giving precedence to user-defined ones
-  const builtinAgents = createBuiltinAgents()
+  const builtinAgents = createBuiltinAgents(ctx.pluginConfig.agents)
   const merged: Record<string, AgentConfig> = {
     ...builtinAgents,
   }

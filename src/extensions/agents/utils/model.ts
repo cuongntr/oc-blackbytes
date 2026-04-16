@@ -29,6 +29,31 @@ export function isGlmModel(model: string): boolean {
   return modelName.includes("glm")
 }
 
+const CLAUDE_PROVIDERS = ["anthropic/"]
+
+export function isClaudeModel(model: string): boolean {
+  if (CLAUDE_PROVIDERS.some((prefix) => model.startsWith(prefix))) return true
+
+  if (
+    model.startsWith("github-copilot/") &&
+    extractModelName(model).toLowerCase().startsWith("claude")
+  )
+    return true
+
+  const modelName = extractModelName(model).toLowerCase()
+  return modelName.startsWith("claude-")
+}
+
+export function isKimiModel(model: string): boolean {
+  const modelName = extractModelName(model).toLowerCase()
+  return modelName.includes("kimi") || modelName.includes("moonshot")
+}
+
+export function isDeepSeekModel(model: string): boolean {
+  const modelName = extractModelName(model).toLowerCase()
+  return modelName.includes("deepseek")
+}
+
 export function isGeminiModel(model: string): boolean {
   if (GEMINI_PROVIDERS.some((prefix) => model.startsWith(prefix))) return true
 
