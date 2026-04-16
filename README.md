@@ -14,7 +14,7 @@ The plugin wires four OpenCode hook surfaces:
 ## Features
 
 - **Built-in MCP provisioning** — configures `websearch`, `context7`, and `grep_app`
-- **Agent installation** — provides `bytes` as the default primary agent plus `explore`, `oracle`, and `librarian` subagents
+- **Agent installation** — provides `bytes` as the default primary agent plus `explore`, `oracle`, `librarian`, and `general`
 - **Local tool registration** — exposes `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`
 - **Hashline editing workflow** — transforms `read` output into `LINE#ID` anchors and turns successful `write` output into concise line-count summaries
 - **Config merging pipeline** — merges built-in MCPs and agents with user-defined config while preserving explicit user disables
@@ -83,21 +83,14 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory.
 |---|---|---|---|
 | `disabled_mcps` | `string[]` | `[]` | Removes built-in MCP entries by name after merge. |
 | `disabled_agents` | `string[]` | `[]` | Removes built-in or merged agent entries by name. |
+| `disabled_hooks` | `string[]` | `[]` | Recognized by the schema for hook-level control workflows. |
 | `disabled_tools` | `string[]` | `[]` | Prevents bundled tools from being registered. |
+| `mcp_env_alllowlist` | `string[]` | `[]` | Recognized by the schema for MCP environment filtering workflows. |
 | `hashline_edit` | `boolean` | `true` | Enables the `hashline_edit` tool and `tool.execute.after` hashline post-processing for `read`/`write`. |
+| `model_fallback` | `boolean` | `false` | Recognized by the schema for model compatibility workflows. |
+| `auto_update` | `boolean` | `false` | Recognized by the schema for maintenance workflows. |
 | `websearch.provider` | `"exa" \| "tavily"` | `"exa"` | Selects the built-in `websearch` MCP backend. |
-
-### Additional recognized keys
-
-These keys are accepted by the config schema and reserved for compatibility or internal workflows:
-
-| Option | Type | Notes |
-|---|---|---|
-| `disabled_hooks` | `string[]` | Reserved for hook-level control. |
-| `mcp_env_alllowlist` | `string[]` | Reserved for MCP environment filtering. |
-| `model_fallback` | `boolean` | Reserved for model compatibility behavior. |
-| `auto_update` | `boolean` | Reserved for plugin maintenance workflows. |
-| `_migrations` | `string[]` | Internal migration bookkeeping. |
+| `_migrations` | `string[]` | `[]` | Internal migration bookkeeping. |
 
 ## Built-in agents
 
@@ -109,8 +102,9 @@ The plugin merges these agents into the OpenCode config and sets `default_agent`
 | `explore` | Subagent | Read-only codebase search specialist for broad, parallel discovery. |
 | `oracle` | Subagent | Read-only high-reasoning advisor for architecture, debugging escalation, and self-review. |
 | `librarian` | Subagent | Read-only research agent for external libraries, remote repositories, docs, and implementation examples. |
+| `general` | Subagent | Write-capable execution agent for multi-file implementation, migrations, and cross-layer changes. |
 
-The merge behavior also preserves explicit user disables (`disable: true`) and marks OpenCode's default `build` and `plan` agents as disabled unless the user configures them directly.
+The merge behavior also preserves explicit user disables (`disable: true`), removes entries listed in `disabled_agents`, uses the OpenCode `permission` map format, and marks OpenCode's default `build` and `plan` agents as disabled unless the user configures them directly.
 
 ## Built-in MCP servers
 
@@ -130,6 +124,70 @@ The merge behavior also preserves explicit user disables (`disable: true`) and m
 | `ast_grep_replace` | AST-aware structural rewrite | Dry-run by default; applies rewrites when `dryRun: false`. |
 | `grep` | Regex content search | Supports `content`, `files_with_matches`, and `count` output modes plus include filters and output limits. |
 | `glob` | Fast file pattern search | Returns matching file paths sorted by modification time. |
+
+### Tool arguments
+
+#### `hashline_edit`
+
+```json
+{
+  "filePath": "src/file.ts",
+  "delete": false,
+  "rename": "src/file-renamed.ts",
+  "edits": [
+    {
+      "op": "replace",
+      "pos": "LINE#ABC123",
+      "end": "LINE#DEF456",
+      "lines": ["replacement text"]
+    }
+  ]
+}
+```
+
+- Supported edit operations: `replace`, `append`, `prepend`
+- Anchors use exact `LINE#ID` tags from transformed `read` output
+- `lines: []` or `lines: null` with `replace` deletes the targeted lines
+- `delete: true` deletes the file
+- `rename` renames the file as part of the same operation
+
+#### `ast_grep_search`
+
+| Argument | Required | Description |
+|---|---|---|
+| `pattern` | Yes | Structural match pattern. |
+| `lang` | Yes | ast-grep language identifier. |
+| `paths` | No | Explicit file or directory paths to search. |
+| `globs` | No | Glob filters applied within the search. |
+| `context` | No | Context lines included around each match. |
+
+#### `ast_grep_replace`
+
+| Argument | Required | Description |
+|---|---|---|
+| `pattern` | Yes | Structural match pattern. |
+| `rewrite` | Yes | Rewrite template. |
+| `lang` | Yes | ast-grep language identifier. |
+| `paths` | No | Explicit file or directory paths to update. |
+| `globs` | No | Glob filters applied within the update set. |
+| `dryRun` | No | Defaults to `true`; set to `false` to apply changes. |
+
+#### `grep`
+
+| Argument | Required | Description |
+|---|---|---|
+| `pattern` | Yes | Regex search pattern. |
+| `include` | No | File include glob such as `*.ts`. |
+| `path` | No | Search root relative to the runtime directory. |
+| `output_mode` | No | `content`, `files_with_matches`, or `count`. Defaults to `files_with_matches`. |
+| `head_limit` | No | Maximum number of result lines returned. |
+
+#### `glob`
+
+| Argument | Required | Description |
+|---|---|---|
+| `pattern` | Yes | Glob pattern to match. |
+| `path` | No | Search root relative to the runtime directory. |
 
 ### Tool runtime behavior
 
@@ -157,7 +215,7 @@ The plugin resolves its config from the active OpenCode config directory and loo
 - `oc-blackbytes.jsonc`
 - `oc-blackbytes.json`
 
-For CLI usage, `OPENCODE_CONFIG_DIR` overrides the default OpenCode config directory. Desktop builds use the appropriate Tauri config directory and fall back to the CLI config location when an existing CLI config is present.
+For CLI usage, `OPENCODE_CONFIG_DIR` overrides the default OpenCode config directory. Desktop builds use the appropriate Tauri config directories (`ai.opencode.desktop` and `ai.opencode.desktop.dev`) and fall back to the CLI config location when an existing CLI config is present.
 
 ## Environment variables
 
@@ -179,14 +237,18 @@ oc-blackbytes/
 │   ├── index.ts                    # Plugin entry
 │   ├── bootstrap.ts                # Hook assembly
 │   ├── config/                     # JSONC config loading + Zod schemas
-│   ├── handlers/                   # Hook handlers for config, tools, chat headers
+│   ├── handlers/                   # Hook handlers for config, tools, chat headers, and post-processing
 │   ├── extensions/
-│   │   ├── agents/                 # bytes/explore/oracle/librarian agent definitions
+│   │   ├── agents/                 # bytes/explore/oracle/librarian/general agent definitions
+│   │   ├── hooks/                  # Hook-related extension helpers
 │   │   ├── mcp/                    # Built-in MCP server configs
+│   │   ├── skills/                 # Skill extension entrypoints
 │   │   └── tools/                  # hashline_edit, ast-grep, grep, glob
 │   ├── shared/                     # Logger, constants, config path resolution, JSONC utils
 │   ├── compat/                     # Compatibility integrations
-│   └── integrations/               # Additional runtime integrations
+│   ├── integrations/               # Additional runtime integrations
+│   ├── services/                   # Reserved service modules
+│   └── stores/                     # Reserved state stores
 ├── docs/
 │   └── debugging.md
 ├── test/

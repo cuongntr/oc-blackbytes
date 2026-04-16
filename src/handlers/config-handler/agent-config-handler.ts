@@ -1,6 +1,7 @@
 import type { AgentConfig } from "@opencode-ai/sdk/v2"
 import { createBytesAgent } from "../../extensions/agents/bytes"
 import { createExploreAgent } from "../../extensions/agents/explore"
+import { createGeneralAgent } from "../../extensions/agents/general"
 import { createLibrarianAgent } from "../../extensions/agents/librarian"
 import { createOracleAgent } from "../../extensions/agents/oracle"
 import { log } from "../../shared"
@@ -25,7 +26,7 @@ const SUPERSEDED_AGENTS = ["build", "plan"] as const
  * Model parameter handling:
  * - Primary agent (bytes): model param selects prompt variant only;
  *   the returned config does NOT set `model` so it respects the user's UI selection.
- * - Subagents (explore, oracle, librarian): model param is passed through.
+ * - Subagents (explore, oracle, librarian, general): model param is passed through.
  *   When empty, OpenCode falls back to the default model.
  */
 function createBuiltinAgents(): Record<string, AgentConfig> {
@@ -38,6 +39,7 @@ function createBuiltinAgents(): Record<string, AgentConfig> {
     explore: createExploreAgent(defaultModelHint),
     oracle: createOracleAgent(defaultModelHint),
     librarian: createLibrarianAgent(defaultModelHint),
+    general: createGeneralAgent(defaultModelHint),
   }
 }
 

@@ -72,7 +72,7 @@ opencode --log-level DEBUG --print-logs
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["file:///Users/cuongnt/Work/personal/oc-blackbytes"]
+  "plugin": ["file:///absolute/path/to/oc-blackbytes"]
 }
 ```
 
@@ -95,6 +95,13 @@ Plugins in `.opencode/plugins/` load automatically at startup.
 
 The plugin loads `oc-blackbytes.jsonc` or `oc-blackbytes.json` from the resolved OpenCode config directory.
 
+Resolution rules:
+
+- CLI uses `${XDG_CONFIG_HOME:-~/.config}/opencode` by default
+- `OPENCODE_CONFIG_DIR` overrides the CLI config directory
+- Desktop builds use the Tauri config directories for `ai.opencode.desktop` and `ai.opencode.desktop.dev`
+- Desktop resolution falls back to the CLI config directory when an existing CLI `opencode.json` or `opencode.jsonc` is present
+
 Useful checks:
 
 ```bash
@@ -103,9 +110,27 @@ opencode debug config
 
 - Confirm the plugin appears in the final OpenCode config.
 - Confirm merged `mcp` and `agent` sections include the expected built-in entries.
-- Confirm `disabled_mcps`, `disabled_agents`, `disabled_tools`, and `hashline_edit` produce the expected final shape.
+- Confirm `disabled_mcps`, `disabled_agents`, `disabled_hooks`, `disabled_tools`, `hashline_edit`, and `websearch.provider` produce the expected final shape.
 
 `OPENCODE_CONFIG_DIR` is the fastest way to point the plugin at an isolated test config directory.
+
+### Agent merge behavior
+
+The plugin installs these built-in agents:
+
+- `bytes`
+- `explore`
+- `oracle`
+- `librarian`
+- `general`
+
+When debugging agent config:
+
+1. Confirm `default_agent` resolves to `bytes` when the user did not set one explicitly.
+2. Confirm user-supplied agents still override built-in entries with the same key.
+3. Confirm user agents with `disable: true` remain present but disabled.
+4. Confirm names listed in `disabled_agents` are removed after merge.
+5. Confirm OpenCode's `build` and `plan` agents are disabled unless they were configured explicitly.
 
 ## Tool debugging
 
@@ -147,6 +172,8 @@ When `hashline_edit` is enabled:
 
 - `read` output is rewritten into `LINE#ID|content` format
 - `write` success output is rewritten into `File written successfully. N lines written.`
+
+The tool itself supports `replace`, `append`, and `prepend` edits, optional `rename`, optional `delete`, and batched anchored edits against a single read snapshot.
 
 If those transformations are missing, verify that `hashline_edit` is not set to `false` in plugin config.
 

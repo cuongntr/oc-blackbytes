@@ -43,7 +43,7 @@ Fire multiple subagent tasks in parallel when researching different questions.
 ${SHARED_SECTIONS.subagentDelegation}
 
 **Standard workflow for complex tasks:**
-1. Explore (scope) → 2. Oracle (plan, if needed) → 3. Implement → 4. Verify
+1. Explore (scope) → 2. Oracle (plan, if needed) → 3. General (heavy implementation) or Implement directly (small changes) → 4. Verify
 
 # Skills
 

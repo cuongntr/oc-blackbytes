@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, chmodSync } from "node:fs"
-import { join } from "node:path"
+import { chmodSync, existsSync, mkdirSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { getBinaryDownloadDir } from "./binary-resolver"
+import { join } from "node:path"
 import { log } from "../../../shared/utils/logger"
+import { getBinaryDownloadDir } from "./binary-resolver"
 
 /**
  * Downloads a binary from a URL and places it in the cache bin directory.
@@ -56,7 +56,7 @@ export async function downloadBinary(url: string, binaryName: string): Promise<s
 async function extractTarGz(
   archivePath: string,
   outputDir: string,
-  binaryName: string,
+  _binaryName: string,
 ): Promise<void> {
   const result = Bun.spawnSync(
     ["tar", "xzf", archivePath, "--strip-components=1", "-C", outputDir],
@@ -78,7 +78,7 @@ async function extractTarGz(
 async function extractZip(
   archivePath: string,
   outputDir: string,
-  binaryName: string,
+  _binaryName: string,
 ): Promise<void> {
   const result = Bun.spawnSync(["unzip", "-o", archivePath, "-d", outputDir], {
     stdout: "pipe",

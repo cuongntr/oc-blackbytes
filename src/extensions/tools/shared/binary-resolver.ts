@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
+import { homedir } from "node:os"
 import { join } from "node:path"
-import { homedir, tmpdir } from "node:os"
 import { CACHE_DIR_NAME } from "../../../shared/constants/plugin-identity"
 
 export type BinaryBackend = "native" | "fallback"

@@ -50,8 +50,9 @@ ${SHARED_SECTIONS.subagentDelegation}
 Example workflow for a complex feature:
 1. Fire 2-3 Explore tasks in parallel to understand the affected modules
 2. If architecture is unclear, ask Oracle for guidance
-3. Implement the changes yourself
-4. Run verification gates
+3. Delegate heavy implementation to General (or fire multiple in parallel for disjoint targets)
+4. For small focused changes, implement directly yourself
+5. Run verification gates
 
 ## 5. Skills
 
