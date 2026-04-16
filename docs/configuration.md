@@ -180,9 +180,9 @@ When `model_fallback: true`, the plugin discovers which providers have valid cre
 
 1. **Provider discovery** — at plugin init, calls `client.provider.list()` to find connected providers
 2. **Model resolution** — for each agent with a configured model:
-   1. If the primary model's provider is connected → use it
-   2. Otherwise, walk the agent's per-agent `fallback_models` chain → use the first available
-   3. Otherwise, walk the global `fallback_models` chain → use the first available
+   1. If the primary model resolves against the connected provider's actual model list → use it
+   2. Otherwise, walk the agent's per-agent `fallback_models` chain → use the first model that resolves
+   3. Otherwise, walk the global `fallback_models` chain → use the first model that resolves
    4. Otherwise, fall back to OpenCode's default model
 3. **Graceful degradation** — if provider discovery fails (server not ready, network error), fallback resolution is skipped entirely and models are used as-is
 
@@ -243,10 +243,9 @@ Fallback chains support flexible formats:
 
 When a fallback entry includes `reasoningEffort` or `temperature`, those overrides take effect only when that specific fallback model is actually used — they don't affect the primary model.
 
-### Provider availability check
+### Provider and model availability check
 
-The resolver checks provider-level connectivity, not individual model availability within a provider. A model reference like `openai/o3` is considered available if the `openai` provider has valid credentials. Models without a provider prefix (no `/`) are always considered available.
-
+The resolver validates both provider connectivity and model availability within that provider. Exact model IDs are preferred, and provider-scoped prefix matching is used for date-suffixed variants like `anthropic/claude-sonnet-4-6` → `anthropic/claude-sonnet-4-6-20260401`. Models without a provider prefix (no `/`) are still treated as available because the plugin cannot validate them.
 ### Debugging fallback resolution
 
 Check `/tmp/oc-blackbytes.log` for resolution details:

@@ -68,22 +68,29 @@ export async function discoverAvailableModels(
 }
 
 /**
- * Checks if a model reference's provider is connected.
- * Model refs must be in "provider/model" format.
+ * Resolves a model reference against the discovered model list.
+ * Model refs must be in "provider/model" format to be validated.
  *
- * Returns true if:
- * - The provider is in the available models map
- * - The model ref is not in "provider/model" format (can't validate, assume OK)
- * - The available models map is empty (discovery failed, don't block anything)
+ * Returns:
+ * - The canonical available model ref when the exact model exists
+ * - The canonical available model ref when the configured model is a prefix match
+ *   (e.g. date-suffixed variants)
+ * - The original ref when it has no provider prefix or discovery was skipped
+ * - undefined when the provider is disconnected or the model is not available
  */
-function isModelAvailable(modelRef: string, availableModels: AvailableModels): boolean {
-  if (availableModels.size === 0) return true
+function resolveModelRef(modelRef: string, availableModels: AvailableModels): string | undefined {
+  if (availableModels.size === 0) return modelRef
 
   const slashIdx = modelRef.indexOf("/")
-  if (slashIdx === -1) return true
+  if (slashIdx === -1) return modelRef
 
   const providerId = modelRef.substring(0, slashIdx)
-  return availableModels.has(providerId)
+  const modelId = modelRef.substring(slashIdx + 1)
+  const providerModels = availableModels.get(providerId)
+  if (!providerModels) return undefined
+
+  const matchedModel = prefixMatchModel(modelId, providerModels)
+  return matchedModel ? `${providerId}/${matchedModel}` : undefined
 }
 
 /**
@@ -158,11 +165,12 @@ function walkFallbackChain(
 
   for (const entry of chain) {
     const modelRef = typeof entry === "string" ? entry : entry.model
-    if (isModelAvailable(modelRef, availableModels)) {
+    const resolvedModel = resolveModelRef(modelRef, availableModels)
+    if (resolvedModel) {
       return typeof entry === "string"
-        ? { model: entry, fromFallback: true }
+        ? { model: resolvedModel, fromFallback: true }
         : {
-            model: entry.model,
+            model: resolvedModel,
             fromFallback: true,
             reasoningEffort: entry.reasoningEffort,
             temperature: entry.temperature,
@@ -233,10 +241,10 @@ function resolveAgentModel(
     return { model: "", fromFallback: false }
   }
 
-  // Primary model's provider is connected → use it
-  if (isModelAvailable(primaryModel, availableModels)) {
-    log(`  [model-resolver] ${agentName}: using primary model ${primaryModel}`)
-    return { model: primaryModel, fromFallback: false }
+  const resolvedPrimaryModel = resolveModelRef(primaryModel, availableModels)
+  if (resolvedPrimaryModel) {
+    log(`  [model-resolver] ${agentName}: using primary model ${resolvedPrimaryModel}`)
+    return { model: resolvedPrimaryModel, fromFallback: false }
   }
 
   log(
