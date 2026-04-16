@@ -49,6 +49,7 @@ This log is the fastest way to inspect:
 - config file detection and validation failures
 - MCP registration and omission decisions
 - agent and tool registration
+- model fallback resolution (connected providers, chain resolution)
 - bundled binary download or fallback behavior
 
 ## OpenCode log output
@@ -132,6 +133,7 @@ When debugging agent config:
 4. Confirm names listed in `disabled_agents` are removed after merge.
 5. Confirm OpenCode's `build` and `plan` agents are disabled unless they were configured explicitly.
 6. Confirm per-agent model overrides from `agents` config are applied (model, reasoningEffort, temperature).
+7. When `model_fallback: true`: confirm provider discovery ran and fallback chains resolved correctly. Check log for `[model-resolver]` entries.
 
 ## Tool debugging
 
@@ -204,6 +206,27 @@ Parameter application:
 - **explore / librarian**: No thinking or reasoning defaults applied (speed priority).
 
 If parameter adaptation looks wrong, inspect the log file for `[chat.params]` entries which show the detected agent, model, family, and reasoning capability.
+
+## Model fallback debugging
+
+When `model_fallback: true`, the plugin discovers connected providers at init and resolves fallback chains.
+
+Check the log for `[model-resolver]` entries:
+
+```
+[model-resolver] Connected providers: anthropic, google
+[model-resolver] Resolving agent models with fallback chains...
+  [model-resolver] oracle: primary model openai/o3 not available, trying fallbacks...
+  [model-resolver] oracle: resolved → anthropic/claude-opus-4-6 (agent fallback)
+  [model-resolver] explore: using primary model google/gemini-2.5-flash
+```
+
+Common issues:
+
+1. **No connected providers** — `client.provider.list()` may have failed. Check if OpenCode server is running and API is accessible.
+2. **No fallback resolution** — `model_fallback` is not set to `true` in plugin config.
+3. **Unexpected model used** — Check the resolution order: primary model → per-agent `fallback_models` → global `fallback_models` → OpenCode default.
+4. **Parameter mismatch after fallback** — When falling back, the fallback entry's `reasoningEffort`/`temperature` override the agent's static config. This is intentional since different models may need different parameters.
 
 ## Unit tests
 

@@ -29,7 +29,7 @@ export const FallbackModelsSchema = z.union([
  * - `model`: Override the agent's default model (e.g., `"openai/gpt-5.4"` for oracle)
  * - `reasoningEffort`: Override reasoning effort level (for OpenAI reasoning models)
  * - `temperature`: Override temperature (e.g., lower for search agents, higher for creative)
- * - `fallback_models`: Per-agent fallback chain (reserved for Phase 2)
+ * - `fallback_models`: Per-agent fallback chain — tried when the primary model's provider is unavailable
  */
 export const AgentModelConfigSchema = z.object({
   model: z.string().optional(),
@@ -52,6 +52,7 @@ export const OcBlackbytesConfigSchema = z.object({
 
   mcp_env_alllowlist: z.array(z.string()).optional(),
   hashline_edit: z.boolean().optional(),
+  /** Enable model fallback resolution: discover connected providers at init and resolve fallback chains */
   model_fallback: z.boolean().optional(),
   auto_update: z.boolean().optional(),
   websearch: WebsearchConfigSchema.optional(),
@@ -76,7 +77,9 @@ export const OcBlackbytesConfigSchema = z.object({
 
   /**
    * Global fallback model chain for all agents.
-   * Used when an agent's preferred model is unavailable. (Reserved for Phase 2)
+   * When an agent's preferred model is unavailable (provider not connected),
+   * the plugin walks this chain and uses the first model whose provider is connected.
+   * Requires `model_fallback: true` to activate.
    */
   fallback_models: FallbackModelsSchema.optional(),
 

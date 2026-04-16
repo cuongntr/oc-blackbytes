@@ -18,12 +18,14 @@ import {
 export async function createOpenCodePlugin({
   input,
   pluginConfig,
+  availableModels,
 }: {
   input: PluginInput
   pluginConfig: OcBlackbytesConfig
+  availableModels: Map<string, Set<string>>
 }): Promise<Hooks> {
   return {
-    ...handleConfig(pluginConfig),
+    ...handleConfig(pluginConfig, availableModels),
     ...handleChatHeaders(pluginConfig),
     ...handleChatParams(pluginConfig),
     tool: handleTools(pluginConfig, input),

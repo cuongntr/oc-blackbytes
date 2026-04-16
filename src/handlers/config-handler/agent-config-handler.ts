@@ -5,6 +5,7 @@ import { createExploreAgent } from "../../extensions/agents/explore"
 import { createGeneralAgent } from "../../extensions/agents/general"
 import { createLibrarianAgent } from "../../extensions/agents/librarian"
 import { createOracleAgent } from "../../extensions/agents/oracle"
+import { resolveAllAgentModels } from "../../services"
 import { log } from "../../shared"
 import type { ConfigContext } from "./types"
 
@@ -180,8 +181,14 @@ export function handleAgentConfig(ctx: ConfigContext): void {
   const userAgents = ctx.config.agent
   const userDisabledAgentNames = captureUserDisabledAgents(userAgents)
 
+  // Resolve agent models through fallback chains when model_fallback is enabled
+  const effectiveOverrides =
+    ctx.availableModels.size > 0
+      ? (resolveAllAgentModels(ctx.pluginConfig, ctx.availableModels) ?? ctx.pluginConfig.agents)
+      : ctx.pluginConfig.agents
+
   // Merge built-in agents with user-defined agents, giving precedence to user-defined ones
-  const builtinAgents = createBuiltinAgents(ctx.pluginConfig.agents)
+  const builtinAgents = createBuiltinAgents(effectiveOverrides)
   const merged: Record<string, AgentConfig> = {
     ...builtinAgents,
   }

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-16
+
+### Added
+
+- Model fallback resolution system — discovers connected providers at plugin init and resolves agent models through multi-level fallback chains (primary → per-agent fallback → builtin chain → global fallback → OpenCode default)
+- Builtin fallback chains for `oracle`, `explore`, `librarian`, and `general` agents with provider-aware model preferences
+- Prefix matching for model IDs to handle date-suffixed variants (e.g., `claude-sonnet-4` matches `claude-sonnet-4-20250514`)
+- Parameter overrides (reasoningEffort, temperature) from fallback chain entries applied when a fallback model is selected
+- `model_fallback` config flag to enable provider discovery and fallback resolution
+- Configuration guide (`docs/configuration.md`) with full reference for all plugin settings
+
+### Changed
+
+- Documentation updated with model fallback resolution details, debugging guidance, and configuration examples
+
 ## [0.3.0] - 2026-04-16
 
 ### Added

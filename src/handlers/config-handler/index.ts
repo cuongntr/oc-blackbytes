@@ -7,11 +7,14 @@ import type { ConfigContext } from "./types"
 /**
  * Handles the plugin configuration by applying necessary transformations and merging
  */
-export function handleConfig(pluginConfig: OcBlackbytesConfig): Hooks {
+export function handleConfig(
+  pluginConfig: OcBlackbytesConfig,
+  availableModels: Map<string, Set<string>>,
+): Hooks {
   return {
     config: async (config) => {
       // Create a context object that includes both the current configuration and the plugin configuration
-      const configCtx: ConfigContext = { config, pluginConfig }
+      const configCtx: ConfigContext = { config, pluginConfig, availableModels }
 
       // Apply MCP configuration, which merges built-in and user-defined MCPs while respecting disabled settings
       handleMcpConfig(configCtx)

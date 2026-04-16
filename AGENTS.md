@@ -34,7 +34,7 @@ src/
 │   └── schema/                 # Zod schemas (config, MCP names, websearch, per-agent model config)
 ├── compat/                     # Compatibility layers
 ├── integrations/               # External/runtime integrations
-├── services/                   # Reserved service modules
+├── services/                   # Model fallback resolution (provider discovery, fallback chains)
 ├── stores/                     # Reserved state stores
 ├── shared/                     # Cross-cutting utilities
 │   ├── constants/              # PLUGIN_NAME, CONFIG_BASENAME, LOG_FILENAME, CACHE_DIR_NAME

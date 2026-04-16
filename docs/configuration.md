@@ -8,6 +8,7 @@ This guide covers all `oc-blackbytes.jsonc` configuration options, recommended m
 - [Full config reference](#full-config-reference)
 - [Agent overview](#agent-overview)
 - [Recommended models per agent](#recommended-models-per-agent)
+- [Model fallback resolution](#model-fallback-resolution)
 - [Runtime model parameter adaptation](#runtime-model-parameter-adaptation)
 - [Example configurations](#example-configurations)
 - [Tips and best practices](#tips-and-best-practices)
@@ -56,9 +57,16 @@ The `OPENCODE_CONFIG_DIR` environment variable overrides the default path.
     "general": { "model": "anthropic/claude-sonnet-4-6" }
   },
 
-  // Reserved for future use
-  "model_fallback": false,
-  "fallback_models": [],
+  // Enable model fallback resolution (discovers connected providers at init)
+  "model_fallback": true,
+
+  // Global fallback chain for all agents (requires model_fallback: true)
+  "fallback_models": [
+    "anthropic/claude-sonnet-4-6",
+    { "model": "openai/gpt-4.1", "reasoningEffort": "medium" },
+    "google/gemini-2.5-pro"
+  ],
+
   "auto_update": false
 }
 ```
@@ -70,7 +78,7 @@ The `OPENCODE_CONFIG_DIR` environment variable overrides the default path.
 | `model` | `string` | Model identifier in `provider/model` format. For subagents, this sets the model directly. For `bytes`, it only affects prompt variant selection — the actual model is determined by the OpenCode UI. |
 | `reasoningEffort` | `string` | Override reasoning effort for OpenAI models: `"low"`, `"medium"`, or `"high"`. |
 | `temperature` | `number` | Override temperature (0.0–2.0). Lower = more deterministic, higher = more creative. |
-
+| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain — tried when the primary model's provider is unavailable. Requires `model_fallback: true`. |
 ## Agent overview
 
 | Agent | Mode | Role | Capabilities | Cost profile |
@@ -162,6 +170,93 @@ General executes well-scoped implementation tasks that `bytes` delegates. It nee
 
 ```jsonc
 "general": { "model": "anthropic/claude-sonnet-4-6" }
+```
+
+## Model fallback resolution
+
+When `model_fallback: true`, the plugin discovers which providers have valid credentials at startup and automatically resolves models through fallback chains when a preferred model's provider is unavailable.
+
+### How it works
+
+1. **Provider discovery** — at plugin init, calls `client.provider.list()` to find connected providers
+2. **Model resolution** — for each agent with a configured model:
+   1. If the primary model's provider is connected → use it
+   2. Otherwise, walk the agent's per-agent `fallback_models` chain → use the first available
+   3. Otherwise, walk the global `fallback_models` chain → use the first available
+   4. Otherwise, fall back to OpenCode's default model
+3. **Graceful degradation** — if provider discovery fails (server not ready, network error), fallback resolution is skipped entirely and models are used as-is
+
+### Enabling fallback resolution
+
+```jsonc
+{
+  "model_fallback": true,
+
+  // Global fallback chain (applies to all agents unless overridden)
+  "fallback_models": [
+    "anthropic/claude-sonnet-4-6",
+    "openai/gpt-4.1",
+    "google/gemini-2.5-pro"
+  ],
+
+  "agents": {
+    "oracle": {
+      "model": "openai/o3",
+      "reasoningEffort": "high",
+      // Per-agent fallback chain (tried before global chain)
+      "fallback_models": [
+        { "model": "anthropic/claude-opus-4-6" },
+        { "model": "deepseek/deepseek-r1" }
+      ]
+    },
+    "explore": { "model": "google/gemini-2.5-flash" },
+    "general": { "model": "anthropic/claude-sonnet-4-6" }
+  }
+}
+```
+
+In this example, if OpenAI is unavailable for oracle, it tries Anthropic Claude Opus first, then DeepSeek R1, then the global chain.
+
+### Fallback chain formats
+
+Fallback chains support flexible formats:
+
+```jsonc
+// Single model string
+"fallback_models": "openai/gpt-4.1"
+
+// Array of model strings
+"fallback_models": ["openai/gpt-4.1", "google/gemini-2.5-pro"]
+
+// Array with per-model parameter overrides
+"fallback_models": [
+  { "model": "openai/gpt-4.1", "reasoningEffort": "medium" },
+  { "model": "google/gemini-2.5-pro", "temperature": 0.3 }
+]
+
+// Mixed format
+"fallback_models": [
+  "anthropic/claude-sonnet-4-6",
+  { "model": "openai/gpt-4.1", "reasoningEffort": "high" }
+]
+```
+
+When a fallback entry includes `reasoningEffort` or `temperature`, those overrides take effect only when that specific fallback model is actually used — they don't affect the primary model.
+
+### Provider availability check
+
+The resolver checks provider-level connectivity, not individual model availability within a provider. A model reference like `openai/o3` is considered available if the `openai` provider has valid credentials. Models without a provider prefix (no `/`) are always considered available.
+
+### Debugging fallback resolution
+
+Check `/tmp/oc-blackbytes.log` for resolution details:
+
+```
+[model-resolver] Connected providers: anthropic, google
+[model-resolver] Resolving agent models with fallback chains...
+  [model-resolver] oracle: primary model openai/o3 not available, trying fallbacks...
+  [model-resolver] oracle: resolved → anthropic/claude-opus-4-6 (agent fallback)
+  [model-resolver] explore: using primary model google/gemini-2.5-flash
 ```
 
 ## Runtime model parameter adaptation
@@ -295,6 +390,50 @@ Best when: You use GitHub Copilot as your provider.
 }
 ```
 
+### With fallback chains (multi-provider resilience)
+
+Best when: You have multiple provider API keys and want automatic failover.
+
+```jsonc
+{
+  "model_fallback": true,
+
+  "fallback_models": [
+    "anthropic/claude-sonnet-4-6",
+    "openai/gpt-4.1",
+    "google/gemini-2.5-pro"
+  ],
+
+  "agents": {
+    "oracle": {
+      "model": "openai/o3",
+      "reasoningEffort": "high",
+      "fallback_models": [
+        { "model": "anthropic/claude-opus-4-6" },
+        { "model": "deepseek/deepseek-r1" }
+      ]
+    },
+    "explore": {
+      "model": "google/gemini-2.5-flash",
+      "fallback_models": ["openai/gpt-4.1-mini", "anthropic/claude-haiku-3.5"]
+    },
+    "librarian": {
+      "model": "google/gemini-2.5-flash",
+      "fallback_models": ["openai/gpt-4.1-mini"]
+    },
+    "general": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "fallback_models": ["openai/gpt-4.1"]
+    }
+  }
+}
+```
+
+- Each agent tries its primary model first
+- If the provider is unavailable, per-agent `fallback_models` are tried in order
+- If nothing matches, the global `fallback_models` chain provides a last resort
+- `model_fallback: true` is required to activate the provider discovery and resolution
+
 ### Minimal (no agent model overrides)
 
 The plugin works without any agent model configuration. All agents use the default model from your OpenCode config, and the `chat.params` hook still applies correct thinking/reasoning parameters automatically.
@@ -330,3 +469,5 @@ The plugin works without any agent model configuration. All agents use the defau
    ```
 
 7. **Model names follow OpenCode conventions** — Use the `provider/model` format as shown in your OpenCode provider list. Run `opencode debug config` to see available models.
+
+8. **Use fallback chains for resilience** — When `model_fallback: true`, the plugin checks provider connectivity at startup and routes agents to alternative models automatically. This is especially useful when you use multiple providers but one may have quota issues or outages.
