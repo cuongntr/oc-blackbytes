@@ -97,11 +97,11 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory. For the full conf
 | `disabled_tools` | `string[]` | `[]` | Prevents bundled tools from being registered. |
 | `mcp_env_alllowlist` | `string[]` | `[]` | Recognized by the schema for MCP environment filtering workflows. |
 | `hashline_edit` | `boolean` | `true` | Enables the `hashline_edit` tool and `tool.execute.after` hashline post-processing for `read`/`write`. |
-| `model_fallback` | `boolean` | `false` | Enables model fallback resolution: discovers connected providers at init and resolves fallback chains when a preferred model's provider is unavailable. |
+| `model_fallback` | `boolean` | `true` | Enables model fallback resolution: discovers connected providers at init and resolves fallback chains when a preferred model's provider is unavailable. Set to `false` to disable. |
 | `auto_update` | `boolean` | `false` | Recognized by the schema for maintenance workflows. |
 | `websearch.provider` | `"exa" \| "tavily"` | `"exa"` | Selects the built-in `websearch` MCP backend. |
 | `agents` | `Record<string, AgentModelConfig>` | `{}` | Per-agent model configuration overrides. See [Per-agent model configuration](#per-agent-model-configuration). |
-| `fallback_models` | `string \| (string \| FallbackModelObject)[]` | — | Global fallback model chain. When `model_fallback: true` and an agent's primary model is unavailable, the plugin walks this chain and uses the first model whose provider is connected. |
+| `fallback_models` | `string \| (string \| FallbackModelObject)[]` | — | Global fallback model chain. When an agent's primary model is unavailable, the plugin walks this chain and uses the first model whose provider is connected. |
 | `_migrations` | `string[]` | `[]` | Internal migration bookkeeping. |
 
 ## Built-in agents
@@ -150,7 +150,7 @@ Each agent model config supports:
 | `model` | `string` | Model identifier (e.g., `"openai/gpt-5.4"`). Drives prompt variant selection and, for subagents, sets the model hint. |
 | `reasoningEffort` | `string` | Override reasoning effort level for OpenAI reasoning models (`"low"`, `"medium"`, `"high"`). |
 | `temperature` | `number` | Override temperature for the agent. |
-| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain — tried before the global `fallback_models` when the primary model's provider is unavailable. Requires `model_fallback: true`. |
+| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain — tried before the global `fallback_models` when the primary model's provider is unavailable. |
 
 When a `model` is specified for a subagent, the factory selects the appropriate prompt variant for that model family (Claude, GPT, or Gemini). The primary agent (`bytes`) uses the model hint for prompt selection only — the actual model is determined by the OpenCode UI selection. For recommended models per agent, see [docs/configuration.md](docs/configuration.md).
 

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-16
+
+### Changed
+
+- `model_fallback` now defaults to `true` — provider discovery and fallback resolution are active out of the box without explicit opt-in. Set `model_fallback: false` to disable.
+- Documentation updated to reflect `model_fallback` default change across README, configuration guide, and debugging guide
+
 ## [0.4.0] - 2026-04-16
 
 ### Added

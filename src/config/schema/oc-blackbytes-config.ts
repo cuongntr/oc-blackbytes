@@ -52,7 +52,7 @@ export const OcBlackbytesConfigSchema = z.object({
 
   mcp_env_alllowlist: z.array(z.string()).optional(),
   hashline_edit: z.boolean().optional(),
-  /** Enable model fallback resolution: discover connected providers at init and resolve fallback chains */
+  /** Enable model fallback resolution: discover connected providers at init and resolve fallback chains (default: true) */
   model_fallback: z.boolean().optional(),
   auto_update: z.boolean().optional(),
   websearch: WebsearchConfigSchema.optional(),
@@ -79,7 +79,7 @@ export const OcBlackbytesConfigSchema = z.object({
    * Global fallback model chain for all agents.
    * When an agent's preferred model is unavailable (provider not connected),
    * the plugin walks this chain and uses the first model whose provider is connected.
-   * Requires `model_fallback: true` to activate.
+   * Active by default. Set `model_fallback: false` to disable.
    */
   fallback_models: FallbackModelsSchema.optional(),
 

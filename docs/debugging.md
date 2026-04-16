@@ -209,7 +209,7 @@ If parameter adaptation looks wrong, inspect the log file for `[chat.params]` en
 
 ## Model fallback debugging
 
-When `model_fallback: true`, the plugin discovers connected providers at init and resolves fallback chains.
+The plugin discovers connected providers at init and resolves fallback chains by default.
 
 Check the log for `[model-resolver]` entries:
 
@@ -224,7 +224,7 @@ Check the log for `[model-resolver]` entries:
 Common issues:
 
 1. **No connected providers** — `client.provider.list()` may have failed. Check if OpenCode server is running and API is accessible.
-2. **No fallback resolution** — `model_fallback` is not set to `true` in plugin config.
+2. **No fallback resolution** — `model_fallback` is explicitly set to `false` in plugin config, or provider discovery failed.
 3. **Unexpected model used** — Check the resolution order: primary model → per-agent `fallback_models` → global `fallback_models` → OpenCode default.
 4. **Parameter mismatch after fallback** — When falling back, the fallback entry's `reasoningEffort`/`temperature` override the agent's static config. This is intentional since different models may need different parameters.
 

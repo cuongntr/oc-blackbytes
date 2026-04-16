@@ -57,10 +57,10 @@ The `OPENCODE_CONFIG_DIR` environment variable overrides the default path.
     "general": { "model": "anthropic/claude-sonnet-4-6" }
   },
 
-  // Enable model fallback resolution (discovers connected providers at init)
+  // Model fallback resolution is enabled by default; set to false to disable
   "model_fallback": true,
 
-  // Global fallback chain for all agents (requires model_fallback: true)
+  // Global fallback chain for all agents
   "fallback_models": [
     "anthropic/claude-sonnet-4-6",
     { "model": "openai/gpt-4.1", "reasoningEffort": "medium" },
@@ -78,7 +78,7 @@ The `OPENCODE_CONFIG_DIR` environment variable overrides the default path.
 | `model` | `string` | Model identifier in `provider/model` format. For subagents, this sets the model directly. For `bytes`, it only affects prompt variant selection — the actual model is determined by the OpenCode UI. |
 | `reasoningEffort` | `string` | Override reasoning effort for OpenAI models: `"low"`, `"medium"`, or `"high"`. |
 | `temperature` | `number` | Override temperature (0.0–2.0). Lower = more deterministic, higher = more creative. |
-| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain — tried when the primary model's provider is unavailable. Requires `model_fallback: true`. |
+| `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain — tried when the primary model's provider is unavailable. |
 ## Agent overview
 
 | Agent | Mode | Role | Capabilities | Cost profile |
@@ -174,7 +174,7 @@ General executes well-scoped implementation tasks that `bytes` delegates. It nee
 
 ## Model fallback resolution
 
-When `model_fallback: true`, the plugin discovers which providers have valid credentials at startup and automatically resolves models through fallback chains when a preferred model's provider is unavailable.
+The plugin discovers which providers have valid credentials at startup and automatically resolves models through fallback chains when a preferred model's provider is unavailable. This behavior is enabled by default and can be disabled by setting `model_fallback: false`.
 
 ### How it works
 
@@ -186,11 +186,11 @@ When `model_fallback: true`, the plugin discovers which providers have valid cre
    4. Otherwise, fall back to OpenCode's default model
 3. **Graceful degradation** — if provider discovery fails (server not ready, network error), fallback resolution is skipped entirely and models are used as-is
 
-### Enabling fallback resolution
+### Customizing fallback chains
 
 ```jsonc
 {
-  "model_fallback": true,
+  // Fallback resolution is enabled by default — no need to set model_fallback explicitly
 
   // Global fallback chain (applies to all agents unless overridden)
   "fallback_models": [
@@ -431,7 +431,7 @@ Best when: You have multiple provider API keys and want automatic failover.
 - Each agent tries its primary model first
 - If the provider is unavailable, per-agent `fallback_models` are tried in order
 - If nothing matches, the global `fallback_models` chain provides a last resort
-- `model_fallback: true` is required to activate the provider discovery and resolution
+- Provider discovery and fallback resolution are enabled by default. Set `model_fallback: false` to disable.
 
 ### Minimal (no agent model overrides)
 
