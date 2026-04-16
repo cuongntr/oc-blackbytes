@@ -62,7 +62,7 @@ opencode debug config
 
 ## Configuration
 
-Create `oc-blackbytes.jsonc` in the OpenCode config directory.
+Create `oc-blackbytes.jsonc` in the OpenCode config directory. For the full configuration guide with recommended models per agent and example setups, see [docs/configuration.md](docs/configuration.md).
 
 ```jsonc
 {
@@ -152,7 +152,7 @@ Each agent model config supports:
 | `temperature` | `number` | Override temperature for the agent. |
 | `fallback_models` | `string \| (string \| object)[]` | Per-agent fallback chain (reserved for future use). |
 
-When a `model` is specified for a subagent, the factory selects the appropriate prompt variant for that model family (Claude, GPT, or Gemini). The primary agent (`bytes`) uses the model hint for prompt selection only — the actual model is determined by the OpenCode UI selection.
+When a `model` is specified for a subagent, the factory selects the appropriate prompt variant for that model family (Claude, GPT, or Gemini). The primary agent (`bytes`) uses the model hint for prompt selection only — the actual model is determined by the OpenCode UI selection. For recommended models per agent, see [docs/configuration.md](docs/configuration.md).
 
 ## Runtime model parameter adaptation
 
