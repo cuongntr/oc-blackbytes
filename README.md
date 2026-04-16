@@ -6,7 +6,7 @@ An OpenCode plugin for workflow automation. It provisions built-in MCP servers, 
 
 The plugin wires five OpenCode hook surfaces:
 
-- `config` — merges built-in MCP servers and agents into the active OpenCode config
+- `config` — merges built-in MCP servers, agents, and commands into the active OpenCode config
 - `chat.headers` — injects `x-initiator: agent` for supported GitHub Copilot providers
 - `tool` — registers bundled local tools for structured editing and codebase search
 - `tool.execute.after` — post-processes `read`/`write` output when hashline editing is enabled
@@ -20,7 +20,8 @@ The plugin wires five OpenCode hook surfaces:
 - **Runtime model parameter adaptation** — the `chat.params` hook detects the actual model family at inference time and applies provider-correct parameters (Claude thinking, OpenAI reasoning effort) while stripping incompatible options
 - **Local tool registration** — exposes `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`
 - **Hashline editing workflow** — transforms `read` output into `LINE#ID` anchors and turns successful `write` output into concise line-count summaries
-- **Config merging pipeline** — merges built-in MCPs and agents with user-defined config while preserving explicit user disables
+- **Config merging pipeline** — merges built-in MCPs, agents, and commands with user-defined config while preserving explicit user disables
+- **Built-in commands** — provides `/setup-models` for interactive model configuration setup
 - **JSONC config loading** — reads `oc-blackbytes.json` or `oc-blackbytes.jsonc` with comments and trailing commas
 - **Structured logging** — buffers plugin logs to `/tmp/oc-blackbytes.log`
 - **Binary auto-installation** — downloads cached search binaries when needed for bundled tools
@@ -97,7 +98,7 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory. For the full conf
 | `disabled_tools` | `string[]` | `[]` | Prevents bundled tools from being registered. |
 | `mcp_env_alllowlist` | `string[]` | `[]` | Recognized by the schema for MCP environment filtering workflows. |
 | `hashline_edit` | `boolean` | `true` | Enables the `hashline_edit` tool and `tool.execute.after` hashline post-processing for `read`/`write`. |
-| `model_fallback` | `boolean` | `true` | Enables model fallback resolution: discovers connected providers at init and resolves fallback chains when a preferred model's provider is unavailable. Set to `false` to disable. |
+| `model_fallback` | `boolean` | `false` | Enables model fallback resolution: discovers connected providers at init and resolves fallback chains when a preferred model's provider is unavailable. Set to `true` to enable. |
 | `auto_update` | `boolean` | `false` | Recognized by the schema for maintenance workflows. |
 | `websearch.provider` | `"exa" \| "tavily"` | `"exa"` | Selects the built-in `websearch` MCP backend. |
 | `agents` | `Record<string, AgentModelConfig>` | `{}` | Per-agent model configuration overrides. See [Per-agent model configuration](#per-agent-model-configuration). |
@@ -117,6 +118,14 @@ The plugin merges these agents into the OpenCode config and sets `default_agent`
 | `general` | Subagent | Write-capable execution agent for multi-file implementation, migrations, and cross-layer changes. |
 
 The merge behavior also preserves explicit user disables (`disable: true`), removes entries listed in `disabled_agents`, uses the OpenCode `permission` map format, and marks OpenCode's default `build` and `plan` agents as disabled unless the user configures them directly.
+
+## Built-in commands
+
+The plugin registers these built-in slash commands into the OpenCode config:
+
+| Command | Description |
+|---|---|
+| `/setup-models` | Interactive wizard that discovers available models, recommends optimal assignments per agent role, and writes the configuration to `oc-blackbytes.jsonc`. |
 
 ### Per-agent model configuration
 
@@ -303,6 +312,7 @@ oc-blackbytes/
 │   │   ├── hooks/                  # Hook-related extension helpers
 │   │   ├── mcp/                    # Built-in MCP server configs
 │   │   ├── skills/                 # Skill extension entrypoints
+│   │   ├── commands/              # Built-in slash commands (setup-models)
 │   │   └── tools/                  # hashline_edit, ast-grep, grep, glob
 │   ├── shared/                     # Logger, constants, config path resolution, JSONC utils
 │   ├── compat/                     # Compatibility integrations

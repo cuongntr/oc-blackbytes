@@ -50,9 +50,11 @@ src/
 │       ├── types.ts              # ConfigContext type
 │       ├── mcp-config-handler.ts # MCP merging pipeline (builtin + user + disabled)
 │       ├── agent-config-handler.ts # Agent merging pipeline (builtin + user + disabled)
-│       └── command-config-handler.ts # Reserved command config handling
+│   ├── command-config-handler.ts # Command config handling (built-in command registration)
 └── extensions/
     ├── agents/                 # bytes, explore, oracle, librarian, and general definitions
+    ├── commands/               # Built-in slash commands (setup-models)
+    ├── hooks/                  # Hook-related extension helpers
     ├── hooks/                  # Hook-related extension helpers
     ├── mcp/                    # Built-in MCP server configs (websearch, context7, grep.app)
     ├── skills/                 # Skill extension entrypoints
@@ -67,7 +69,7 @@ src/
 
 - **`config/`** — Discovers and validates `oc-blackbytes.json[c]` from the OpenCode config directory. Schema defined with Zod v4.
 - **`shared/`** — Constants, buffered file logger (writes to `/tmp/oc-blackbytes.log`), JSONC parsing utilities, OpenCode config dir resolution for CLI and Tauri desktop.
-- **`handlers/config-handler/`** — Orchestrates the `config` hook. Merges built-in MCPs and agents with user-defined config, respects `disabled_mcps` / `disabled_agents`, preserves explicit user disables, applies per-agent model overrides from the `agents` config field, and sets `default_agent` to `bytes` when appropriate.
+- **`handlers/config-handler/`** — Orchestrates the `config` hook. Merges built-in MCPs, agents, and commands with user-defined config, respects `disabled_mcps` / `disabled_agents`, preserves explicit user disables, applies per-agent model overrides from the `agents` config field, and sets `default_agent` to `bytes` when appropriate.
 - **`handlers/chat-headers-handler.ts`** — Handles the `chat.headers` hook. Injects `x-initiator: agent` header for GitHub Copilot and GitHub Copilot Enterprise providers.
 - **`handlers/chat-params-handler.ts`** — Handles the `chat.params` hook. Detects the actual model family at runtime and applies provider-correct thinking/reasoning config per agent, stripping incompatible options for other providers.
 - **`handlers/tool-handler.ts`** — Registers `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`, filtered by `disabled_tools` and `hashline_edit`.
@@ -75,13 +77,14 @@ src/
 - **`extensions/mcp/`** — Factory for built-in MCP servers: websearch (Exa/Tavily), Context7, grep.app. Controlled by plugin config.
 - **`extensions/agents/`** — Factory for built-in agents: `bytes`, `explore`, `oracle`, `librarian`, and `general`, including model-aware prompt selection and OpenCode `permission` map generation.
 - **`extensions/tools/`** — Tool definitions for hashline editing, AST-aware search/replace, regex search, and glob search.
+- **`extensions/commands/`** — Definitions for built-in slash commands. Each command specifies a template, description, and optional agent/model binding.
 
 ### Plugin Flow
 
 1. OpenCode loads `BlackbytesPlugin` from `dist/index.js`
 2. Plugin receives `{ client, directory, worktree }` from OpenCode runtime
 3. Loads `oc-blackbytes.json[c]` from the resolved OpenCode config directory
-4. Returns a `config` hook that provisions MCP servers and built-in agents into OpenCode's config
+4. Returns a `config` hook that provisions MCP servers, built-in agents, and commands into OpenCode's config
 5. Returns a `chat.headers` hook that injects `x-initiator: agent` for supported GitHub Copilot providers
 6. Returns a `chat.params` hook that adapts model parameters at runtime based on actual model family and agent role
 7. Returns a `tool` hook that registers bundled local tools
@@ -96,3 +99,4 @@ src/
 - Built-in MCPs: `websearch`, `context7`, `grep_app`.
 - Built-in agents: `bytes`, `explore`, `oracle`, `librarian`, `general`.
 - Bundled tools: `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, `glob`.
+- Built-in commands: `setup-models`.

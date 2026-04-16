@@ -134,6 +134,8 @@ When debugging agent config:
 5. Confirm OpenCode's `build` and `plan` agents are disabled unless they were configured explicitly.
 6. Confirm per-agent model overrides from `agents` config are applied (model, reasoningEffort, temperature).
 7. When `model_fallback: true`: confirm provider discovery ran and fallback chains resolved correctly. Check log for `[model-resolver]` entries.
+8. Check log for `[agents] Factory` entries showing per-agent model hints during creation.
+9. Check log for `[agents] Final` entries showing the resolved model assignment for each enabled agent.
 
 ## Tool debugging
 
@@ -219,14 +221,30 @@ Check the log for `[model-resolver]` entries:
   [model-resolver] oracle: primary model openai/o3 not available, trying fallbacks...
   [model-resolver] oracle: resolved → anthropic/claude-opus-4-6 (agent fallback)
   [model-resolver] explore: using primary model google/gemini-2.5-flash
-```
+[model-resolver] Resolution complete: oracle=anthropic/claude-opus-4-6, explore=google/gemini-2.5-flash, librarian=(default), general=anthropic/claude-sonnet-4-6
 
 Common issues:
 
-1. **No connected providers** — `client.provider.list()` may have failed. Check if OpenCode server is running and API is accessible.
+1. **No connected providers** — `client.provider.list()` may have failed. Check if OpenCode server is running and API is accessible. The provider discovery has a 20-second timeout — if it times out, fallback resolution is skipped and models are used as-is.
 2. **No fallback resolution** — `model_fallback` is explicitly set to `false` in plugin config, or provider discovery failed.
 3. **Unexpected model used** — Check the resolution order: primary model → per-agent `fallback_models` → global `fallback_models` → OpenCode default.
 4. **Parameter mismatch after fallback** — When falling back, the fallback entry's `reasoningEffort`/`temperature` override the agent's static config. This is intentional since different models may need different parameters.
+
+## Command debugging
+
+Built-in commands are registered through the `config` hook alongside agents and MCPs.
+
+Check `/tmp/oc-blackbytes.log` for `[commands]` entries:
+
+```
+[commands] Registered 1 built-in command(s)
+```
+
+If a built-in command does not appear in the OpenCode command palette:
+
+1. Confirm the command is not overridden by a user-defined command with the same name
+2. Check the log for `Skipping '<name>': user-defined override exists`
+3. Run `opencode debug config` and inspect the `command` section
 
 ## Unit tests
 

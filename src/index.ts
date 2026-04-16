@@ -6,9 +6,9 @@ import { discoverAvailableModels } from "./services"
 const BlackbytesPlugin: Plugin = async (ctx) => {
   const pluginConfig = loadPluginConfig(ctx)
 
-  // Discover connected providers for model fallback resolution (enabled by default)
+  // Discover connected providers for model fallback resolution (disabled by default)
   const availableModels =
-    pluginConfig.model_fallback !== false
+    pluginConfig.model_fallback === true
       ? await discoverAvailableModels(ctx.client)
       : new Map<string, Set<string>>()
 

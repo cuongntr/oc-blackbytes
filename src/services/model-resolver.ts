@@ -38,8 +38,15 @@ export type ResolvedModel = {
 export async function discoverAvailableModels(
   client: PluginInput["client"],
 ): Promise<AvailableModels> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
   try {
-    const result = await client.provider.list()
+    const result = await Promise.race([
+      client.provider.list(),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Provider discovery timed out")), 20_000)
+      }),
+    ])
+    clearTimeout(timeoutId)
     const data = result.data
     if (!data) {
       log("[model-resolver] Provider list returned no data, skipping fallback resolution")
@@ -62,6 +69,7 @@ export async function discoverAvailableModels(
 
     return models
   } catch (e) {
+    clearTimeout(timeoutId)
     log(`[model-resolver] Failed to discover providers: ${e}`)
     return new Map()
   }
@@ -238,6 +246,9 @@ function resolveAgentModel(
       return globalResolved
     }
 
+    log(
+      `  [model-resolver] ${agentName}: no model configured, all fallback chains exhausted → using OpenCode default`,
+    )
     return { model: "", fromFallback: false }
   }
 
@@ -272,7 +283,9 @@ function resolveAgentModel(
     return globalResolved
   }
 
-  log(`  [model-resolver] ${agentName}: no available fallback, using OpenCode default`)
+  log(
+    `  [model-resolver] ${agentName}: primary model unavailable, all fallback chains exhausted → using OpenCode default`,
+  )
   return { model: "", fromFallback: false }
 }
 
@@ -328,6 +341,12 @@ export function resolveAllAgentModels(
         : {}),
     }
   }
+
+  // Summary log of all resolved models
+  const summary = Object.entries(resolved)
+    .map(([name, cfg]) => `${name}=${cfg.model || "(default)"}`)
+    .join(", ")
+  log(`[model-resolver] Resolution complete: ${summary}`)
 
   return resolved
 }

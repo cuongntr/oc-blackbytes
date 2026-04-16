@@ -4,6 +4,7 @@ This guide covers all `oc-blackbytes.jsonc` configuration options, recommended m
 
 ## Table of Contents
 
+- [Quick setup with /setup-models](#quick-setup-with-setup-models)
 - [Config file location](#config-file-location)
 - [Full config reference](#full-config-reference)
 - [Agent overview](#agent-overview)
@@ -25,6 +26,18 @@ Create `oc-blackbytes.jsonc` (or `oc-blackbytes.json`) in the OpenCode config di
 
 The `OPENCODE_CONFIG_DIR` environment variable overrides the default path.
 
+## Quick setup with /setup-models
+
+The fastest way to configure model assignments is the built-in `/setup-models` command. Type `/setup-models` in the OpenCode chat to:
+
+1. Discover which models and providers are available
+2. Check for existing plugin configuration
+3. Recommend optimal model assignments per agent role
+4. Write the configuration to `oc-blackbytes.jsonc`
+
+The command respects existing settings — if a config file already exists, it merges model assignments without discarding other fields.
+
+For manual configuration, continue with the sections below.
 ## Full config reference
 
 ```jsonc
@@ -57,7 +70,7 @@ The `OPENCODE_CONFIG_DIR` environment variable overrides the default path.
     "general": { "model": "anthropic/claude-sonnet-4-6" }
   },
 
-  // Model fallback resolution is enabled by default; set to false to disable
+  // Model fallback resolution is disabled by default; set to true to enable provider discovery + fallback chains
   "model_fallback": true,
 
   // Global fallback chain for all agents
@@ -174,7 +187,7 @@ General executes well-scoped implementation tasks that `bytes` delegates. It nee
 
 ## Model fallback resolution
 
-The plugin discovers which providers have valid credentials at startup and automatically resolves models through fallback chains when a preferred model's provider is unavailable. This behavior is enabled by default and can be disabled by setting `model_fallback: false`.
+The plugin can discover which providers have valid credentials at startup and automatically resolve models through fallback chains when a preferred model's provider is unavailable. This behavior is **disabled by default** — set `model_fallback: true` to enable it.
 
 ### How it works
 
@@ -190,7 +203,9 @@ The plugin discovers which providers have valid credentials at startup and autom
 
 ```jsonc
 {
-  // Fallback resolution is enabled by default — no need to set model_fallback explicitly
+  // Enable provider discovery and fallback resolution
+  "model_fallback": true,
+
 
   // Global fallback chain (applies to all agents unless overridden)
   "fallback_models": [
@@ -431,7 +446,7 @@ Best when: You have multiple provider API keys and want automatic failover.
 - Each agent tries its primary model first
 - If the provider is unavailable, per-agent `fallback_models` are tried in order
 - If nothing matches, the global `fallback_models` chain provides a last resort
-- Provider discovery and fallback resolution are enabled by default. Set `model_fallback: false` to disable.
+- Provider discovery and fallback resolution are disabled by default. Set `model_fallback: true` to enable.
 
 ### Minimal (no agent model overrides)
 

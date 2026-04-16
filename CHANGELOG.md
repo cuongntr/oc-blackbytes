@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-16
+
+### Added
+
+- Built-in `/setup-models` command — interactive wizard that discovers available models, recommends optimal assignments per agent role, and writes configuration to `oc-blackbytes.jsonc`
+- Command config handler pipeline for registering built-in commands alongside MCPs and agents
+- Command definitions in `src/extensions/commands/` following the extensions/handlers separation pattern
+
+### Changed
+
+- `model_fallback` reverted to `false` by default — provider discovery and fallback resolution require explicit opt-in via `model_fallback: true`
+- Provider discovery now has a 20-second timeout to prevent hanging when the OpenCode server is slow to respond
+- Enhanced debug logging throughout agent resolution, model resolver, and config handler for easier troubleshooting
+- Documentation updated across README, configuration guide, debugging guide, and AGENTS.md
+
 ## [0.5.0] - 2026-04-16
 
 ### Changed

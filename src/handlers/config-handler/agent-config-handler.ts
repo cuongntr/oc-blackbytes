@@ -57,6 +57,7 @@ function createBuiltinAgents(
   // Create each agent using its factory, passing per-agent model if configured
   for (const [name, factory] of Object.entries(BUILTIN_AGENT_FACTORIES)) {
     const modelHint = agentOverrides?.[name]?.model ?? ""
+    log(`  [agents] Factory '${name}': modelHint=${modelHint || "(empty)"}`)
     agents[name] = factory(modelHint)
   }
 
@@ -182,10 +183,17 @@ export function handleAgentConfig(ctx: ConfigContext): void {
   const userDisabledAgentNames = captureUserDisabledAgents(userAgents)
 
   // Resolve agent models through fallback chains when model_fallback is enabled
-  const effectiveOverrides =
-    ctx.availableModels.size > 0
-      ? (resolveAllAgentModels(ctx.pluginConfig, ctx.availableModels) ?? ctx.pluginConfig.agents)
-      : ctx.pluginConfig.agents
+  let effectiveOverrides: Record<string, AgentModelConfig> | undefined
+  if (ctx.availableModels.size > 0) {
+    effectiveOverrides =
+      resolveAllAgentModels(ctx.pluginConfig, ctx.availableModels) ?? ctx.pluginConfig.agents
+    log(
+      `  [agents] Model resolution: used fallback chains (${ctx.availableModels.size} provider(s) available)`,
+    )
+  } else {
+    effectiveOverrides = ctx.pluginConfig.agents
+    log(`  [agents] Model resolution: SKIPPED (no providers discovered, using static config)`)
+  }
 
   // Merge built-in agents with user-defined agents, giving precedence to user-defined ones
   const builtinAgents = createBuiltinAgents(effectiveOverrides)
@@ -226,6 +234,13 @@ export function handleAgentConfig(ctx: ConfigContext): void {
   // Log enabled agents for debugging
   const enabledCount = Object.values(merged).filter((a) => !a.disable).length
   log(`  Total agents enabled: ${enabledCount}`)
+
+  // Log final model assignment per agent for debugging
+  for (const [name, agent] of Object.entries(merged)) {
+    if (agent.disable) continue
+    const model = (agent as Record<string, unknown>).model
+    log(`  [agents] Final: ${name} → model=${model || "(opencode default)"}`)
+  }
 
   ctx.config.agent = merged
 
