@@ -96,6 +96,8 @@ export function appendRuntimeContextToAgents(
     if (agent.disable || !agent.prompt) continue
 
     const section = buildRuntimeContextSection(context, name)
+    if (agent.prompt.includes("<available_resources>")) continue
+
     if (section) {
       agent.prompt += section
     }

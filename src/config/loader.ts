@@ -25,9 +25,42 @@ export function loadConfigFromPath(configPath: string): OcBlackbytesConfig | nul
   }
 }
 
-export function loadPluginConfig(_input: PluginInput): OcBlackbytesConfig {
-  const configDir = getOpenCodeConfigDir({ binary: "opencode" })
+export function loadPluginConfig(input: PluginInput): {
+  config: OcBlackbytesConfig
+  warnings: string[]
+} {
+  const warnings: string[] = []
+  const binary = typeof input.client === "string" && input.client ? input.client : "opencode"
+  const configDir = getOpenCodeConfigDir({ binary })
   const detected = detectPluginConfigFile(configDir)
 
-  return loadConfigFromPath(detected.path) ?? {}
+  if (!existsSync(detected.path)) {
+    warnings.push(`[oc-blackbytes] No config file found at ${detected.path}, using defaults`)
+    return { config: {}, warnings }
+  }
+
+  try {
+    const content = readFileSync(detected.path, "utf-8")
+    let rawConfig: unknown
+    try {
+      rawConfig = parseJsonc<unknown>(content)
+    } catch (parseError) {
+      warnings.push(`[oc-blackbytes] Failed to parse JSONC in ${detected.path}: ${parseError}`)
+      return { config: {}, warnings }
+    }
+
+    const result = OcBlackbytesConfigSchema.safeParse(rawConfig)
+    if (!result.success) {
+      const issues = result.error.issues.map((i) => i.message).join("; ")
+      warnings.push(`[oc-blackbytes] Schema validation errors in ${detected.path}: ${issues}`)
+      log(`Config validation error in ${detected.path}:`, result.error.issues)
+      return { config: {}, warnings }
+    }
+
+    return { config: result.data, warnings }
+  } catch (error) {
+    warnings.push(`[oc-blackbytes] Error loading config from ${detected.path}: ${error}`)
+    log(`Error loading config from ${detected.path}:`, error)
+    return { config: {}, warnings }
+  }
 }

@@ -1,11 +1,11 @@
-import type { AgentConfig } from "@opencode-ai/sdk"
+import type { AgentConfig } from "@opencode-ai/sdk/v2"
 import type { AgentMode } from "../types"
 import { isGeminiModel, isGptModel } from "../utils"
 import { createAgentToolRestrictions } from "../utils/permission-compat"
 import { BYTES_DESCRIPTION } from "./agent"
-import { BYTES_DEFAULT_PROMPT } from "./default"
-import { BYTES_GEMINI_PROMPT } from "./gemini"
-import { BYTES_GPT_PROMPT } from "./gpt"
+import { buildBytesDefaultPrompt } from "./default"
+import { buildBytesGeminiPrompt } from "./gemini"
+import { buildBytesGptPrompt } from "./gpt"
 
 const MODE: AgentMode = "primary"
 
@@ -28,7 +28,7 @@ const DENIED_TOOLS = ["todowrite", "todoread"]
  * it respects the user's UI-selected model. The `model` parameter
  * is used solely for prompt variant selection.
  */
-export function createBytesAgent(model: string): AgentConfig {
+export function createBytesAgent(model: string, hashlineEditEnabled = true): AgentConfig {
   const restrictions = createAgentToolRestrictions(DENIED_TOOLS)
   const permission = { ...restrictions.permission, question: "allow" as const }
 
@@ -43,7 +43,7 @@ export function createBytesAgent(model: string): AgentConfig {
   if (isGptModel(model)) {
     return {
       ...base,
-      prompt: BYTES_GPT_PROMPT,
+      prompt: buildBytesGptPrompt(hashlineEditEnabled),
       reasoningEffort: "medium",
       textVerbosity: "high",
     } as AgentConfig
@@ -52,15 +52,14 @@ export function createBytesAgent(model: string): AgentConfig {
   if (isGeminiModel(model)) {
     return {
       ...base,
-      prompt: BYTES_GEMINI_PROMPT,
+      prompt: buildBytesGeminiPrompt(hashlineEditEnabled),
     } as AgentConfig
   }
 
   // Default: Claude and other models — XML-tagged with extended thinking
   return {
     ...base,
-    prompt: BYTES_DEFAULT_PROMPT,
-    thinking: { type: "enabled", budgetTokens: 32000 },
+    prompt: buildBytesDefaultPrompt(hashlineEditEnabled),
   } as AgentConfig
 }
 

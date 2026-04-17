@@ -1,4 +1,4 @@
-import type { AgentConfig } from "@opencode-ai/sdk"
+import type { AgentConfig } from "@opencode-ai/sdk/v2"
 import type { AgentMode, AgentPromptMetadata } from "./types"
 import { createAgentToolRestrictions } from "./utils/permission-compat"
 
@@ -320,13 +320,14 @@ export function createLibrarianAgent(model: string): AgentConfig {
     "hashline_edit",
     "ast_grep_replace",
   ])
+  const permission = { ...restrictions.permission, read: "allow" as const }
 
   return {
     description: DESCRIPTION,
     mode: MODE,
     model,
     temperature: 0.1,
-    ...restrictions,
+    permission,
     prompt: PROMPT,
   }
 }

@@ -55,6 +55,7 @@ const BUILTIN_AGENT_FACTORIES = {
  */
 function createBuiltinAgents(
   agentOverrides?: Record<string, AgentModelConfig>,
+  hashlineEditEnabled = true,
 ): Record<string, AgentConfig> {
   const agents: Record<string, AgentConfig> = {}
 
@@ -62,7 +63,11 @@ function createBuiltinAgents(
   for (const [name, factory] of Object.entries(BUILTIN_AGENT_FACTORIES)) {
     const modelHint = agentOverrides?.[name]?.model ?? ""
     log(`  [agents] Factory '${name}': modelHint=${modelHint || "(empty)"}`)
-    agents[name] = factory(modelHint)
+    if (name === "bytes") {
+      agents[name] = createBytesAgent(modelHint, hashlineEditEnabled)
+    } else {
+      agents[name] = factory(modelHint)
+    }
   }
 
   // Apply per-agent parameter overrides on top of factory defaults
@@ -242,7 +247,8 @@ export function handleAgentConfig(ctx: ConfigContext): void {
   }
 
   // Merge built-in agents with user-defined agents, giving precedence to user-defined ones
-  const builtinAgents = createBuiltinAgents(effectiveOverrides)
+  const hashlineEditEnabled = ctx.pluginConfig.hashline_edit !== false
+  const builtinAgents = createBuiltinAgents(effectiveOverrides, hashlineEditEnabled)
   const merged: Record<string, AgentConfig> = {
     ...builtinAgents,
   }

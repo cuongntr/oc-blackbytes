@@ -12,6 +12,7 @@ import {
   RG_FILES_FLAGS,
   resolveGrepCli,
 } from "./constants"
+import { resolveFindCli } from "./find-cli"
 import type { FileMatch, GlobOptions, GlobResult } from "./types"
 
 export interface ResolvedCli {
@@ -123,7 +124,8 @@ async function runRgFilesInternal(
     const args = buildFindArgs(options)
     const paths = options.paths?.length ? options.paths : ["."]
     cwd = paths[0] || "."
-    command = [cli.path, ...args]
+    const findPath = await resolveFindCli()
+    command = [findPath, ...args]
   }
 
   const proc = spawn(command, {

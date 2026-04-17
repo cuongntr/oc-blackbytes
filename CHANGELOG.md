@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Workspace boundary enforcement for all bundled tools — tools operate within the project worktree and reject paths outside it
+- `find` binary resolution fallback for glob tool when `fd` is unavailable
+- Test coverage for agent config merging, MCP config merging, handler registration, and workspace boundary validation
+
+### Changed
+
+- Config loader accepts the OpenCode `client` object for more reliable config directory resolution
+- Removed deprecated `permission-compat.ts` compatibility layer
+- Removed unused schema fields (`disabled_hooks`, `mcp_env_allowlist`, `auto_update`, `_migrations`)
+- Debugging guide consolidated into README (previously a separate `docs/debugging.md` file)
+
 ## [0.7.0] - 2026-04-16
 
 ### Added

@@ -1,6 +1,7 @@
 import { resolve } from "node:path"
 import type { PluginInput } from "@opencode-ai/plugin"
 import { type ToolDefinition, tool } from "@opencode-ai/plugin/tool"
+import { assertWithinWorkspace } from "../../../shared/utils"
 import { runRgFiles } from "./cli"
 import { resolveGrepCliWithAutoInstall } from "./constants"
 import { formatGlobResult } from "./result-formatter"
@@ -29,6 +30,7 @@ export function createGlobTools(ctx: PluginInput): Record<string, ToolDefinition
         const runtimeCtx = context as Record<string, unknown>
         const dir = typeof runtimeCtx.directory === "string" ? runtimeCtx.directory : ctx.directory
         const searchPath = args.path ? resolve(dir, args.path) : dir
+        await assertWithinWorkspace(searchPath, dir)
 
         const result = await runRgFiles(
           {

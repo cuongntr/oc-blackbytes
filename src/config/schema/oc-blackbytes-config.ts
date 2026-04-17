@@ -46,15 +46,12 @@ export const OcBlackbytesConfigSchema = z.object({
 
   disabled_mcps: z.array(AnyMcpNameSchema).optional(),
   disabled_agents: z.array(z.string()).optional(),
-  disabled_hooks: z.array(z.string()).optional(),
   /** Disable specific tools by name (e.g., ["totowrite", "todoread"]) */
   disabled_tools: z.array(z.string()).optional(),
 
-  mcp_env_alllowlist: z.array(z.string()).optional(),
   hashline_edit: z.boolean().optional(),
   /** Enable model fallback resolution: discover connected providers at init and resolve fallback chains (default: false) */
   model_fallback: z.boolean().optional(),
-  auto_update: z.boolean().optional(),
   websearch: WebsearchConfigSchema.optional(),
 
   /**
@@ -82,8 +79,6 @@ export const OcBlackbytesConfigSchema = z.object({
    * Disabled by default. Set `model_fallback: true` to enable.
    */
   fallback_models: FallbackModelsSchema.optional(),
-
-  _migrations: z.array(z.string()).optional(),
 })
 
 export type OcBlackbytesConfig = z.infer<typeof OcBlackbytesConfigSchema>

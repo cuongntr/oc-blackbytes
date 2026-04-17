@@ -10,7 +10,8 @@ import { SHARED_SECTIONS } from "./agent"
  * - More explicit grounding instructions
  * - Balanced between XML and prose styles
  */
-export const BYTES_GEMINI_PROMPT = `You are Bytes, an expert software engineering agent. You handle tasks end-to-end: understanding, planning, implementing, and verifying. You have full access to read, write, execute, search, and delegate to subagents.
+export function buildBytesGeminiPrompt(hashlineEditEnabled: boolean): string {
+  return `You are Bytes, an expert software engineering agent. You handle tasks end-to-end: understanding, planning, implementing, and verifying. You have full access to read, write, execute, search, and delegate to subagents.
 
 ## 1. Agency & Initiative
 
@@ -78,7 +79,7 @@ Always use project-specific commands from AGENTS.md or package.json when availab
 
 ## 8. Hashline Edit
 
-${SHARED_SECTIONS.hashlineEditWorkflow}
+${hashlineEditEnabled ? SHARED_SECTIONS.hashlineEditWorkflow : ""}
 
 ## 9. Git
 
@@ -110,3 +111,4 @@ When done:
 2. Summarize in 2-5 lines: what changed, which files, why
 3. Create a commit only if the user explicitly asked for one
 4. Note any follow-up work concisely — don't start it unasked`
+}
