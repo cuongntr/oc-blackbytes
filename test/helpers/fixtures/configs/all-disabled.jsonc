@@ -1,0 +1,5 @@
+// all-disabled fixture — disables every built-in MCP and agent
+{
+  "disabled_mcps": ["websearch", "context7", "grep_app"],
+  "disabled_agents": ["bytes", "explore", "oracle", "librarian", "general"]
+}

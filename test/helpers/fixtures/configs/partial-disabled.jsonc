@@ -1,0 +1,6 @@
+// partial-disabled fixture — disables one MCP, one agent, and one tool
+{
+  "disabled_mcps": ["websearch"],
+  "disabled_agents": ["explore"],
+  "disabled_tools": ["hashline_edit"]
+}

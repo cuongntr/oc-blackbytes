@@ -1,0 +1,4 @@
+// malformed fixture — intentionally invalid: disabled_mcps must be an array, not a string
+{
+  "disabled_mcps": "not-an-array"
+}

@@ -1,0 +1,9 @@
+// all-enabled fixture — every MCP and agent enabled, no disables, realistic shape
+{
+  "hashline_edit": true,
+  "model_fallback": true,
+  "websearch": {
+    "provider": "exa"
+  },
+  "fallback_models": ["github-copilot/claude-sonnet-4.6", "openai/gpt-4o"]
+}

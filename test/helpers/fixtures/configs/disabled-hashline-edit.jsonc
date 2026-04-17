@@ -1,0 +1,4 @@
+// disabled-hashline-edit fixture — disables the hashline_edit tool via disabled_tools
+{
+  "disabled_tools": ["hashline_edit"]
+}

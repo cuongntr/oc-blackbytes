@@ -1,0 +1,2 @@
+// minimal fixture — empty config, exercises the JSONC comment parser
+{}

@@ -1,0 +1,23 @@
+// agent-models fixture — per-agent model overrides via the agents config field
+{
+  "agents": {
+    "bytes": {
+      "model": "github-copilot/claude-opus-4.7"
+    },
+    "oracle": {
+      "model": "openai/o3",
+      "reasoningEffort": "high"
+    },
+    "explore": {
+      "model": "google/gemini-2.5-flash",
+      "temperature": 0.2
+    },
+    "librarian": {
+      "model": "github-copilot/claude-sonnet-4.6"
+    },
+    "general": {
+      "model": "openai/gpt-4o",
+      "fallback_models": ["github-copilot/claude-sonnet-4.6"]
+    }
+  }
+}

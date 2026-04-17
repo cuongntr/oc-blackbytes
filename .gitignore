@@ -17,3 +17,6 @@ oc-blackbytes.jsonc
 
 # bv (beads viewer) local config and caches
 .bv/
+
+# E2E test artifacts
+test/e2e/artifacts/

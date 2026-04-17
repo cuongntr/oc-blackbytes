@@ -30,6 +30,72 @@ afterEach(() => {
 })
 
 describe("config loader", () => {
+  it("loadConfigFromPath with nonexistent file returns null", () => {
+    expect(loadConfigFromPath("/no/such/path/oc-blackbytes.json")).toBeNull()
+  })
+
+  it("loadConfigFromPath with JSONC comments and trailing commas", () => {
+    const dir = createTempDir()
+    const configPath = writeConfigFile(
+      dir,
+      "oc-blackbytes.jsonc",
+      `{
+        // This is a comment
+        "hashline_edit": true, /* inline block comment */
+        "disabled_agents": ["oracle",], // trailing comma
+      }`,
+    )
+    const result = loadConfigFromPath(configPath)
+    expect(result).not.toBeNull()
+    expect(result?.hashline_edit).toBe(true)
+    expect(result?.disabled_agents).toEqual(["oracle"])
+  })
+
+  it("loadConfigFromPath with invalid JSON returns null (schema error surfaces gracefully)", () => {
+    const dir = createTempDir()
+    const configPath = writeConfigFile(dir, "oc-blackbytes.json", "{this is not valid json!!}")
+    expect(loadConfigFromPath(configPath)).toBeNull()
+  })
+
+  it("loadPluginConfig from OpenCode dir prefers .jsonc over .json", () => {
+    const dir = createTempDir()
+    writeConfigFile(dir, "oc-blackbytes.json", JSON.stringify({ hashline_edit: false }))
+    writeConfigFile(dir, "oc-blackbytes.jsonc", `{ "hashline_edit": true }`)
+    process.env.OPENCODE_CONFIG_DIR = dir
+
+    const { config, warnings } = loadPluginConfig(
+      // biome-ignore lint/suspicious/noExplicitAny: plugin input is unused by this loader
+      {} as any,
+    )
+    expect(config.hashline_edit).toBe(true)
+    expect(warnings).toEqual([])
+  })
+
+  it("loadPluginConfig with only .json file loads it", () => {
+    const dir = createTempDir()
+    writeConfigFile(dir, "oc-blackbytes.json", JSON.stringify({ hashline_edit: false }))
+    process.env.OPENCODE_CONFIG_DIR = dir
+
+    const { config, warnings } = loadPluginConfig(
+      // biome-ignore lint/suspicious/noExplicitAny: plugin input is unused by this loader
+      {} as any,
+    )
+    expect(config.hashline_edit).toBe(false)
+    expect(warnings).toEqual([])
+  })
+
+  it("loadPluginConfig with neither .json nor .jsonc returns defaults and warning", () => {
+    process.env.OPENCODE_CONFIG_DIR = createTempDir()
+
+    const { config, warnings } = loadPluginConfig(
+      // biome-ignore lint/suspicious/noExplicitAny: plugin input is unused by this loader
+      {} as any,
+    )
+    expect(config).toEqual({})
+    expect(warnings.length).toBeGreaterThan(0)
+    expect(warnings[0]).toContain("oc-blackbytes")
+  })
+
   it("loads a valid oc-blackbytes jsonc file from a path", () => {
     const dir = createTempDir()
     const configPath = writeConfigFile(
