@@ -60,7 +60,6 @@ export function createBytesAgent(model: string, hashlineEditEnabled = true): Age
   return {
     ...base,
     prompt: buildBytesDefaultPrompt(hashlineEditEnabled),
-    thinking: { type: "enabled", budgetTokens: 32000 },
   } as AgentConfig
 }
 

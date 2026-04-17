@@ -189,7 +189,6 @@ export function createGeneralAgent(model: string): AgentConfig {
 
   return {
     ...base,
-    thinking: { type: "enabled", budgetTokens: 16000 },
   } as AgentConfig
 }
 createGeneralAgent.mode = MODE

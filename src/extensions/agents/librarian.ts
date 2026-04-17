@@ -320,13 +320,14 @@ export function createLibrarianAgent(model: string): AgentConfig {
     "hashline_edit",
     "ast_grep_replace",
   ])
+  const permission = { ...restrictions.permission, read: "allow" as const }
 
   return {
     description: DESCRIPTION,
     mode: MODE,
     model,
     temperature: 0.1,
-    ...restrictions,
+    permission,
     prompt: PROMPT,
   }
 }
