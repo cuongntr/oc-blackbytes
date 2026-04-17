@@ -120,8 +120,9 @@ function resolveThinkingType(modelRef: string): "adaptive" | "enabled" {
   if (modelName.includes("claude-3")) return "enabled"
 
   // Parse version for opus/sonnet: 4.5 and below require "enabled"
+  // Handles both dot and hyphen separators (e.g., opus-4.7, opus-4-7-20260101)
   // Distinguishes sub-version (1-2 digits) from date suffixes (8 digits)
-  const match = modelName.match(/(?:opus|sonnet)-(\d+)(?:-(\d{1,2})(?:\D|$))?/)
+  const match = modelName.match(/(?:opus|sonnet)[.-](\d+)(?:[.-](\d{1,2})(?:\D|$))?/)
   if (match) {
     const major = Number.parseInt(match[1], 10)
     const minor = match[2] !== undefined ? Number.parseInt(match[2], 10) : 0

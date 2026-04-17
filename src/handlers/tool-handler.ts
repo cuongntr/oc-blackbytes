@@ -1,6 +1,6 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import type { ToolDefinition } from "@opencode-ai/plugin/tool"
-import type { OcBlackbytesConfig } from "../../config"
+import type { OcBlackbytesConfig } from "../config"
 import { createAstGrepTools } from "../extensions/tools/ast-grep"
 import { createGlobTools } from "../extensions/tools/glob"
 import { createGrepTools } from "../extensions/tools/grep"
@@ -14,7 +14,9 @@ type ToolRegistry = Record<string, ToolDefinition>
  * Returns a tool registry suitable for `Hooks.tool`.
  */
 export function handleTools(pluginConfig: OcBlackbytesConfig, ctx: PluginInput): ToolRegistry {
-  const disabledTools = new Set((pluginConfig.disabled_tools ?? []).map((t) => t.toLowerCase()))
+  const disabledTools = new Set(
+    (pluginConfig.disabled_tools ?? []).map((t: string) => t.toLowerCase()),
+  )
 
   const registry: ToolRegistry = {}
 

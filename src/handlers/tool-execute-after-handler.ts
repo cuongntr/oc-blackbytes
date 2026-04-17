@@ -1,4 +1,4 @@
-import type { OcBlackbytesConfig } from "../../config"
+import type { OcBlackbytesConfig } from "../config"
 import { computeLineHash } from "../extensions/tools/hashline-edit/hash-computation"
 
 const WRITE_SUCCESS_MARKER = "File written successfully."
