@@ -14,10 +14,12 @@
   ],
   "scripts": {
     "build": "bun build ./src/index.ts --target bun --format esm --outfile ./dist/index.js",
-    "test": "bun test",
+    "test": "bun test test/*.test.ts test/**/*.test.ts --path-ignore-patterns 'test/e2e/**'",
+    "test:unit": "bun test test/*.test.ts test/**/*.test.ts --path-ignore-patterns 'test/e2e/**' --coverage",
+    "test:e2e": "BYTES_TEST_DETERMINISTIC=1 bun test test/e2e/",
     "lint": "biome lint src test",
     "format": "biome format --write src test",
-    "check": "biome check src test",
+    "check": "biome check src test && bun run test:unit && bun run test:e2e",
     "prepublishOnly": "bun run build"
   },
   "keywords": [
