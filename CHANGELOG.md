@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-04-17
+
+### Fixed
+
+- `librarian` agent no longer prompts for permission on every `/tmp` read or shell command. The agent now has `bash: "allow"` and `external_directory: "allow"` permissions so it can clone repos to the system temp directory and run `gh`/`git` without interactive approval. Write-side tools (`write`, `edit`, `hashline_edit`, `ast_grep_replace`, `apply_patch`, `task`) remain denied, preserving the read-only guarantee.
+
 ## [0.7.1] - 2026-04-17
 
 ### Added
