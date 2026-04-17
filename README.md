@@ -250,13 +250,20 @@ During local plugin development, load the package through a `file://` plugin ent
 
 ## Debugging
 
-See [docs/debugging.md](docs/debugging.md) for the full guide.
-
-Quick reference:
+The plugin writes buffered logs to `/tmp/oc-blackbytes.log`. Inspect this file for config resolution, model fallback decisions, MCP provisioning, and tool registration details.
 
 ```bash
+# View OpenCode logs with debug verbosity
 opencode --print-logs --log-level DEBUG
+
+# View plugin-specific logs
 cat /tmp/oc-blackbytes.log
+
+# Watch logs in real time
+tail -f /tmp/oc-blackbytes.log
+
+# Inspect the resolved OpenCode config (includes merged agents, MCPs, and commands)
+opencode debug config
 ```
 
 ## Project structure
@@ -281,10 +288,14 @@ oc-blackbytes/
 │   ├── integrations/
 │   └── stores/
 ├── docs/
-│   ├── configuration.md
-│   └── debugging.md
+│   └── configuration.md
 ├── test/
-│   └── config.test.ts
+│   ├── config.test.ts
+│   ├── agent-config.test.ts
+│   ├── mcp-config.test.ts
+│   ├── handlers.test.ts
+│   ├── workspace-boundary.test.ts
+│   └── model-resolver.test.ts
 ├── dist/
 ├── AGENTS.md
 ├── CHANGELOG.md
