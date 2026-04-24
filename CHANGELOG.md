@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-04-24
+
+### Fixed
+
+- GitHub Actions publish checks run reliably when a system `sg` binary is present but the ast-grep CLI binary is unavailable or not runnable.
+- E2E disabled-feature assertions match the oc-blackbytes-managed bundled tools runtime context wording.
+- CI linting remains clean by removing unused MCP test imports and avoiding coverage gates that fail successful test runs in Bun.
+
 ## [0.8.0] - 2026-04-24
 
 ### Added

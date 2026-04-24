@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test"
+import { describe, expect, it } from "bun:test"
 import { createWebsearchConfig } from "../../src/extensions/mcp/websearch"
 import { withEnv } from "../helpers/env"
 

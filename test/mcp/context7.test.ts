@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test"
 import { context7 } from "../../src/extensions/mcp/context7"
-import { withEnv } from "../helpers/env"
 
 describe("context7 MCP constant", () => {
   it("is defined", () => {

@@ -1,19 +1,29 @@
 import { describe, expect, it } from "bun:test"
+import { spawnSync } from "node:child_process"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { runSg } from "../../src/extensions/tools/ast-grep/cli"
-import { isBinaryAvailable } from "../helpers/process-probe"
+import { findSgCliPathSync } from "../../src/extensions/tools/ast-grep/sg-cli-path"
 import { makeTmpDir } from "../helpers/tmp-dir"
 
-const sgAvailable = await isBinaryAvailable("sg")
-const describeIfSg = sgAvailable ? describe : describe.skip
+const sgPath = findSgCliPathSync()
+const sgAvailable =
+  sgPath !== null && spawnSync(sgPath, ["--version"], { stdio: "ignore" }).status === 0
+
+function skipWhenSgUnavailable(): boolean {
+  if (sgAvailable) return false
+  console.log("  SKIP: ast-grep CLI binary is not runnable — skipping real sg test")
+  return true
+}
 
 // ---------------------------------------------------------------------------
 // End-to-end tests using real sg binary
 // ---------------------------------------------------------------------------
 
-describeIfSg("runSg — real sg binary", () => {
+describe("runSg — real sg binary", () => {
   it("finds console.log($MSG) pattern in a JS file", async () => {
+    if (skipWhenSgUnavailable()) return
+
     const tmp = makeTmpDir("sg-e2e-search-")
     try {
       const srcDir = join(tmp.path, "src")
@@ -46,6 +56,8 @@ console.log(x)
   })
 
   it("returns empty matches when pattern is not found", async () => {
+    if (skipWhenSgUnavailable()) return
+
     const tmp = makeTmpDir("sg-e2e-nomatch-")
     try {
       writeFileSync(join(tmp.path, "empty.js"), "const x = 1\n")
@@ -65,6 +77,8 @@ console.log(x)
   })
 
   it("performs dry-run replace (rewrite without updateAll)", async () => {
+    if (skipWhenSgUnavailable()) return
+
     const tmp = makeTmpDir("sg-e2e-replace-")
     try {
       const original = `console.log("test")\n`
@@ -91,6 +105,8 @@ console.log(x)
   })
 
   it("applies in-place replace when updateAll=true", async () => {
+    if (skipWhenSgUnavailable()) return
+
     const tmp = makeTmpDir("sg-e2e-update-")
     try {
       const filePath = join(tmp.path, "mod.js")

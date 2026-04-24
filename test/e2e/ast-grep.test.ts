@@ -1,26 +1,33 @@
 /**
  * E2E scenario ocb-3r3.14.6: ast_grep_search + ast_grep_replace against a real temp tree.
  *
- * Skips cleanly if the `sg` binary is not installed. When available:
+ * Skips cleanly if the ast-grep CLI binary is not installed/runnable. When available:
  *  1. Builds a temp JS file tree containing console.log() calls.
  *  2. Runs ast_grep_search — asserts N matches found.
  *  3. Runs ast_grep_replace (dryRun=false) to replace console.log with logger.info.
  *  4. Runs ast_grep_search again — asserts zero matches.
  */
 import { describe, expect, it } from "bun:test"
+import { spawnSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { findSgCliPathSync } from "../../src/extensions/tools/ast-grep/sg-cli-path"
 import { loadPlugin } from "../helpers/plugin-harness"
-import { isBinaryAvailable } from "../helpers/process-probe"
 import { makeTmpDir, writeJsoncFixture } from "../helpers/tmp-dir"
+
+const sgPath = findSgCliPathSync()
+const sgAvailable =
+  sgPath !== null && spawnSync(sgPath, ["--version"], { stdio: "ignore" }).status === 0
+
+function skipWhenSgUnavailable(): boolean {
+  if (sgAvailable) return false
+  console.log("  SKIP: ast-grep CLI binary is not runnable — skipping ast-grep E2E test")
+  return true
+}
 
 describe("E2E 14.6: ast_grep_search + ast_grep_replace", () => {
   it("searches and replaces console.log patterns in a real JS tree (skip if sg unavailable)", async () => {
-    const sgAvailable = await isBinaryAvailable("sg")
-    if (!sgAvailable) {
-      console.log("  SKIP: sg binary not found on PATH — skipping ast-grep E2E test")
-      return
-    }
+    if (skipWhenSgUnavailable()) return
 
     const tmp = makeTmpDir("oc-bb-ast-grep-")
     writeJsoncFixture(`${tmp.path}/oc-blackbytes.jsonc`, {})
@@ -109,11 +116,7 @@ function hello() {
   })
 
   it("ast_grep_search returns no error for a pattern with zero matches", async () => {
-    const sgAvailable = await isBinaryAvailable("sg")
-    if (!sgAvailable) {
-      console.log("  SKIP: sg binary not found on PATH")
-      return
-    }
+    if (skipWhenSgUnavailable()) return
 
     const tmp = makeTmpDir("oc-bb-ast-nomatch-")
     writeJsoncFixture(`${tmp.path}/oc-blackbytes.jsonc`, {})

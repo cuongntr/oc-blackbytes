@@ -156,7 +156,10 @@ describe("E2E 14.2: disabled_mcps / disabled_agents / disabled_tools", () => {
     expect(agentsSection).not.toContain("- explore:")
 
     // Check bundled tools — hashline_edit should not be listed
-    const toolsLine = resourcesSection.split("\n").find((l) => l.startsWith("Bundled tools:")) ?? ""
+    const toolsLine =
+      resourcesSection
+        .split("\n")
+        .find((l) => l.startsWith("Bundled tools (oc-blackbytes-managed):")) ?? ""
     expect(toolsLine).not.toContain("hashline_edit")
     // Other tools should still appear
     expect(toolsLine).toContain("grep")
