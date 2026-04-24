@@ -54,16 +54,14 @@ function assertLanguageMatching(prompt: string | undefined) {
   expect(prompt ?? "").toMatch(/detect the language/i)
 }
 
-function assertConditionalLspWorkflow(prompt: string) {
-  expect(prompt).toContain("OpenCode core `lsp` tool")
-  expect(prompt).toContain("use it conditionally")
-  expect(prompt).toContain("goToDefinition")
-  expect(prompt).toContain("findReferences")
-  expect(prompt).toContain("hover")
-  expect(prompt).toContain("documentSymbol")
-  expect(prompt).toContain("workspaceSymbol")
-  expect(prompt).toContain("grep`, `glob`, `ast_grep_search`, and `read")
-  expect(prompt).toContain("not an oc-blackbytes bundled tool")
+function assertLspDiagnosticsWorkflow(prompt: string) {
+  expect(prompt).toContain("OpenCode LSP Diagnostics")
+  expect(prompt).toContain("diagnostics")
+  expect(prompt).toContain("diagnostics caused by your changes")
+  expect(prompt).toContain("grep`, `glob`, `ast_grep_search`, `read")
+  expect(prompt).toContain("not oc-blackbytes bundled tools")
+  expect(prompt).not.toContain("goToDefinition")
+  expect(prompt).not.toContain("findReferences")
 }
 
 // ---------------------------------------------------------------------------
@@ -218,13 +216,13 @@ describe("createBytesAgent.mode static property", () => {
 })
 
 // ---------------------------------------------------------------------------
-// OpenCode core LSP workflow
+// OpenCode LSP diagnostics workflow
 // ---------------------------------------------------------------------------
-describe("Bytes prompt OpenCode core LSP workflow", () => {
-  it("includes conditional LSP guidance in every prompt variant", () => {
-    assertConditionalLspWorkflow(buildBytesDefaultPrompt(true))
-    assertConditionalLspWorkflow(buildBytesGptPrompt(true))
-    assertConditionalLspWorkflow(buildBytesGeminiPrompt(true))
+describe("Bytes prompt OpenCode LSP diagnostics workflow", () => {
+  it("includes diagnostics-first LSP guidance in every prompt variant", () => {
+    assertLspDiagnosticsWorkflow(buildBytesDefaultPrompt(true))
+    assertLspDiagnosticsWorkflow(buildBytesGptPrompt(true))
+    assertLspDiagnosticsWorkflow(buildBytesGeminiPrompt(true))
   })
 
   it("does not list lsp as an oc-blackbytes bundled tool", () => {

@@ -6,7 +6,6 @@ This guide covers the current `oc-blackbytes.jsonc` configuration surface, agent
 
 - [Config file location](#config-file-location)
 - [Quick setup with `/setup-models`](#quick-setup-with-setup-models)
-- [Quick setup with `/setup-lsp`](#quick-setup-with-setup-lsp)
 - [Full config reference](#full-config-reference)
 - [Built-in agents](#built-in-agents)
 - [Per-agent model configuration](#per-agent-model-configuration)
@@ -15,7 +14,7 @@ This guide covers the current `oc-blackbytes.jsonc` configuration surface, agent
 - [Runtime model parameter adaptation](#runtime-model-parameter-adaptation)
 - [Built-in MCP servers](#built-in-mcp-servers)
 - [Bundled tools](#bundled-tools)
-- [OpenCode core LSP facts](#opencode-core-lsp-facts)
+- [OpenCode LSP diagnostics](#opencode-lsp-diagnostics)
 - [Example configurations](#example-configurations)
 - [Operational notes](#operational-notes)
 
@@ -43,19 +42,6 @@ It:
 
 When a config file already exists, the command preserves unrelated fields and merges the generated `agents` and `model_fallback` settings into the existing file.
 
-## Quick setup with `/setup-lsp`
-
-`/setup-lsp` is the built-in command for guided OpenCode core LSP setup. It configures OpenCode itself, not `oc-blackbytes.jsonc`, and it asks for confirmation before editing user config.
-
-It:
-
-1. explains the experimental `OPENCODE_EXPERIMENTAL_LSP_TOOL=true` and `OPENCODE_EXPERIMENTAL=true` flags
-2. checks supported OpenCode config files such as `config.json`, `opencode.json`, and `opencode.jsonc`
-3. preserves existing `permission`, `lsp`, `agent`, `mcp`, and plugin-related config fields
-4. proposes the minimal `permission.lsp = "allow"` setting and optional `lsp` server entries
-5. summarizes the edited config file, required restart/env flag, and search/read fallbacks
-
-Use this command when you want an interactive, safety-first setup path. Use the manual [OpenCode core LSP facts](#opencode-core-lsp-facts) section below when you need exact schema details or want to update config yourself.
 
 ## Full config reference
 
@@ -320,7 +306,8 @@ Typical flow:
 1. run `read`
 2. copy exact `LINE#ID` anchors
 3. issue one `hashline_edit` call per file with batched edits against the same snapshot
-4. re-read before another edit call on that file
+4. review the success output, which includes `Updated` or `Moved`, the number of requested edits, `+A -D` line counts, and a fenced `diff` block capped at 200 lines
+5. re-read before another edit call on that file
 
 Key operations:
 
@@ -330,6 +317,7 @@ Key operations:
 - optional `rename`
 - optional `delete`
 
+Successful edit output is Markdown-friendly and remains readable as plain text. Large diffs include a truncation note pointing to `git diff -- <path>` for the full file diff.
 ### `ast_grep_search` and `ast_grep_replace`
 
 Pattern rules:
@@ -373,115 +361,20 @@ Arguments:
 - `ast_grep_search` and `ast_grep_replace` auto-resolve `sg` and install a cached binary when needed
 - cached binaries live under the platform cache directory for `oc-blackbytes`
 
-## OpenCode core LSP facts
+## OpenCode LSP diagnostics
 
-Verified on 2026-04-24 against OpenCode source commit [`6c1268f3b18ed289bc524ed10add8c3caa6131d2`](https://github.com/sst/opencode/tree/6c1268f3b18ed289bc524ed10add8c3caa6131d2) and current Context7 docs for `/anomalyco/opencode`. This section records canonical facts for downstream `oc-blackbytes` docs, prompts, and command templates. The `lsp` tool is owned by OpenCode core; it is not an `oc-blackbytes` bundled tool and is not controlled by `disabled_tools`.
+OpenCode can surface LSP diagnostics such as linting and typechecking messages through supported tool output and, when available in the OpenCode runtime, a dedicated `diagnostics` tool. `oc-blackbytes` does not register bundled LSP tools, does not manage language-server lifecycle, and does not control diagnostics through `disabled_tools`.
 
-### Enabling the core `lsp` tool
+Agents use `glob`, `grep`, `ast_grep_search`, `read`, and subagents for code discovery. LSP diagnostics are treated as verification signals for errors and warnings rather than as the primary navigation mechanism.
 
-OpenCode registers the built-in tool as `lsp` in [`packages/opencode/src/tool/lsp.ts`](https://github.com/sst/opencode/blob/6c1268f3b18ed289bc524ed10add8c3caa6131d2/packages/opencode/src/tool/lsp.ts). It is experimental and is only added to OpenCode's tool registry when either environment flag is truthy:
+Diagnostics guidance for agents:
 
-- `OPENCODE_EXPERIMENTAL_LSP_TOOL=true`
-- `OPENCODE_EXPERIMENTAL=true`
+1. Use LSP diagnostics when available to check errors and warnings after reading or modifying files.
+2. Fix diagnostics caused by the agent's own changes.
+3. Ignore diagnostics from unrelated files, or pre-existing issues unrelated to the task, unless the user explicitly asks for broader cleanup.
+4. Fall back to normal verification commands such as type checks, lint, tests, and builds for final validation.
 
-Allow the tool in OpenCode config, not in `oc-blackbytes.jsonc`:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "permission": {
-    "lsp": "allow"
-  }
-}
-```
-
-`OPENCODE_DISABLE_LSP_DOWNLOAD=true` is a separate OpenCode flag that disables automatic LSP server binary downloads; it does not enable or disable the `lsp` tool itself.
-
-Recommended setup path:
-
-1. Choose an OpenCode config file such as `opencode.jsonc`, `opencode.json`, or `config.json`. Do not put core LSP settings in `oc-blackbytes.jsonc`.
-2. Set `OPENCODE_EXPERIMENTAL_LSP_TOOL=true` or `OPENCODE_EXPERIMENTAL=true` before starting OpenCode, then restart OpenCode so the process sees the flag.
-3. Add `permission.lsp = "allow"` if you want agents to call the core tool without being prompted each time.
-4. Add or adjust `lsp` server entries for languages that are not covered by OpenCode's built-in defaults.
-5. Keep normal search/read fallbacks available; LSP depends on a working language server for the target file type.
-
-### Tool operations and arguments
-
-The current `lsp` operation enum is:
-
-- `goToDefinition`
-- `findReferences`
-- `hover`
-- `documentSymbol`
-- `workspaceSymbol`
-- `goToImplementation`
-- `prepareCallHierarchy`
-- `incomingCalls`
-- `outgoingCalls`
-
-All operations share the same required argument schema from [`packages/opencode/src/tool/lsp.ts`](https://github.com/sst/opencode/blob/6c1268f3b18ed289bc524ed10add8c3caa6131d2/packages/opencode/src/tool/lsp.ts):
-
-| Argument | Type | Notes |
-|---|---|---|
-| `operation` | enum | One of the operation names above |
-| `filePath` | string | Absolute path or path relative to the OpenCode instance directory |
-| `line` | integer >= 1 | 1-based editor line number |
-| `character` | integer >= 1 | 1-based editor character offset |
-
-OpenCode converts `line` and `character` to 0-based positions internally before calling the language server. Even file- or workspace-level operations such as `documentSymbol` and `workspaceSymbol` still require `line` and `character` because the public tool schema requires them.
-
-### OpenCode LSP server config
-
-OpenCode's top-level `lsp` config accepts `false` to disable LSP globally or an object keyed by server name. Custom server entries are defined in [`packages/opencode/src/config/lsp.ts`](https://github.com/sst/opencode/blob/6c1268f3b18ed289bc524ed10add8c3caa6131d2/packages/opencode/src/config/lsp.ts) and support:
-
-| Field | Type | Notes |
-|---|---|---|
-| `command` | `string[]` | Command and arguments used to start a custom server |
-| `extensions` | `string[]` | File extensions handled by the server |
-| `disabled` | `boolean` | Disable a configured server |
-| `env` | `Record<string, string>` | Environment variables for the server process |
-| `initialization` | `Record<string, unknown>` | Server-specific LSP initialize options |
-
-Example OpenCode config:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "lsp": {
-    "custom-lsp": {
-      "command": ["custom-lsp-server", "--stdio"],
-      "extensions": [".custom"],
-      "env": {
-        "CUSTOM_LSP_LOG": "info"
-      },
-      "initialization": {
-        "preferences": {
-          "importModuleSpecifierPreference": "relative"
-        }
-      }
-    }
-  },
-  "permission": {
-    "lsp": "allow"
-  }
-}
-```
-
-### OpenCode config file support and precedence
-
-OpenCode parses JSONC for config files. Both `opencode.json` and `opencode.jsonc` are supported:
-
-- Global config is loaded from `config.json`, then `opencode.json`, then `opencode.jsonc`, so global `opencode.jsonc` overrides overlapping global `opencode.json` keys when both exist.
-- Project config discovery searches for both `opencode.jsonc` and `opencode.json` while walking up the project tree. The exact same-directory conflict behavior depends on OpenCode's filesystem search helper, so use one format per directory when downstream examples need deterministic behavior.
-- `.opencode/` directories load `opencode.json` and then `opencode.jsonc`, so `.opencode/opencode.jsonc` overrides overlapping `.opencode/opencode.json` keys.
-
-### Plugin API boundary
-
-The current OpenCode plugin `Hooks` interface does not expose `lsp.*` hooks for plugins to register LSP servers, intercept LSP calls, or manage LSP lifecycle. `oc-blackbytes` should treat core `lsp` as an ambient OpenCode tool when the user enables it. The plugin can document the OpenCode config and can influence normal OpenCode config through its existing config hook, but this bead intentionally adds no custom LSP client or bundled `lsp` tool.
-
-### Limitations and fallbacks
-
-Core `lsp` is best for semantic questions such as definitions, references, hover/type context, symbols, implementations, and call hierarchy. It is not a replacement for filename searches, text searches, or anchored edits. When the `lsp` tool is unavailable, no server is configured for a file type, a language server returns no useful results, or the workspace is too small for semantic lookup to help, agents should immediately fall back to `glob`, `grep`, `ast_grep_search`, and `read`.
+If a project needs custom language-server configuration, configure it in OpenCode's own config files, not in `oc-blackbytes.jsonc`.
 
 ## Example configurations
 

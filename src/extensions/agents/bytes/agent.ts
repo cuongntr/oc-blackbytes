@@ -104,15 +104,17 @@ You have access to specialized subagents via the \`task\` tool. **Default to del
 - A task has independent parts that can be implemented simultaneously → fire multiple General in parallel`,
 
   /**
-   * Conditional OpenCode core LSP workflow for semantic code intelligence.
+   * OpenCode LSP diagnostics workflow.
    */
-  lspWorkflow: `### Semantic Navigation with OpenCode Core LSP
+  lspWorkflow: `### OpenCode LSP Diagnostics
 
-When the OpenCode core \`lsp\` tool is available, use it conditionally for semantic code intelligence: definitions (\`goToDefinition\`), references (\`findReferences\`), hover/type context (\`hover\`), outlines (\`documentSymbol\`), workspace symbols (\`workspaceSymbol\`), implementations (\`goToImplementation\`), and call hierarchy when useful.
+Use OpenCode LSP diagnostics when available to check errors and warnings after reading or modifying files. Diagnostics may appear automatically in tool output, or through a dedicated \`diagnostics\` tool when OpenCode exposes one.
 
-Do not use \`lsp\` for simple filename or text searches where \`glob\` or \`grep\` is cheaper. If \`lsp\` is unavailable, fails, has no configured language server, or returns inconclusive results, immediately fall back to \`grep\`, \`glob\`, \`ast_grep_search\`, and \`read\`.
+Take necessary action to fix diagnostics caused by your changes. Ignore diagnostics from files you did not change, or issues unrelated to your work, unless the user explicitly asks you to fix them.
 
-\`lsp\` is an OpenCode core tool governed by runtime availability and permissions; it is not an oc-blackbytes bundled tool.`,
+Do not rely on experimental semantic \`lsp\` operations for routine code navigation. Prefer \`grep\`, \`glob\`, \`ast_grep_search\`, \`read\`, and Explore subagents for discovery; treat semantic \`lsp\` results as optional and fall back immediately when unavailable or inconclusive.
+
+OpenCode LSP capabilities are governed by runtime availability, configured language servers, and permissions; they are not oc-blackbytes bundled tools.`,
 
   /**
    * Skills awareness — instructions for proactively loading domain-specific skills.

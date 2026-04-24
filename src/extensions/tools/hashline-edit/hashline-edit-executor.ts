@@ -20,6 +20,68 @@ type ToolContextWithMetadata = ToolContext & {
   metadata?: (value: unknown) => void
 }
 
+const MAX_RESULT_DIFF_LINES = 200
+
+interface SuccessMessageOptions {
+  action: "Updated" | "Moved"
+  path: string
+  previousPath?: string
+  editCount: number
+  additions: number
+  deletions: number
+  diff: string
+}
+
+function formatInlineCode(value: string): string {
+  return `\`${value.replaceAll("`", "\\`")}\``
+}
+
+function formatResultDiff(diff: string): {
+  content: string
+  truncated: boolean
+  lineCount: number
+} {
+  const lines = diff.trimEnd().split("\n")
+  if (lines.length <= MAX_RESULT_DIFF_LINES) {
+    return { content: diff.trimEnd(), truncated: false, lineCount: lines.length }
+  }
+
+  return {
+    content: lines.slice(0, MAX_RESULT_DIFF_LINES).join("\n"),
+    truncated: true,
+    lineCount: lines.length,
+  }
+}
+
+function formatSuccessMessage(options: SuccessMessageOptions): string {
+  const target = formatInlineCode(options.path)
+  const actionLine =
+    options.action === "Moved" && options.previousPath
+      ? `Moved ${formatInlineCode(options.previousPath)} to ${target}`
+      : `${options.action} ${target}`
+  const editLabel = options.editCount === 1 ? "edit" : "edits"
+  const lines = [
+    actionLine,
+    `Applied ${options.editCount} ${editLabel}: +${options.additions} -${options.deletions}`,
+  ]
+
+  if (!options.diff.trim()) {
+    return lines.join("\n")
+  }
+
+  const resultDiff = formatResultDiff(options.diff)
+  lines.push("", "```diff", resultDiff.content, "```")
+
+  if (resultDiff.truncated) {
+    lines.push(
+      "",
+      `Diff truncated at ${MAX_RESULT_DIFF_LINES} of ${resultDiff.lineCount} lines. Run \`git diff -- ${options.path}\` for full changes.`,
+    )
+  }
+
+  return lines.join("\n")
+}
+
 function canCreateFromMissingFile(edits: HashlineEdit[]): boolean {
   if (edits.length === 0) return false
   return edits.every((edit) => (edit.op === "append" || edit.op === "prepend") && !edit.pos)
@@ -48,11 +110,16 @@ function buildSuccessMeta(
 
   return {
     title: effectivePath,
+    additions,
+    deletions,
+    diff: unifiedDiff,
     metadata: {
       filePath: effectivePath,
       path: effectivePath,
       file: effectivePath,
       diff: unifiedDiff,
+      additions,
+      deletions,
       noopEdits,
       deduplicatedEdits,
       firstChangedLine,
@@ -146,9 +213,31 @@ export async function executeHashlineEditTool(
         if (rename && rename !== filePath) {
           await Bun.write(rename, formattedContent)
           await Bun.file(filePath).delete()
-          return `Moved ${filePath} to ${rename}`
+          const movedMeta = buildSuccessMeta(
+            rename,
+            oldEnvelope.content,
+            formattedEnvelope.content,
+            applyResult.noopEdits,
+            applyResult.deduplicatedEdits,
+          )
+          return formatSuccessMessage({
+            action: "Moved",
+            path: rename,
+            previousPath: filePath,
+            editCount: edits.length,
+            additions: movedMeta.additions,
+            deletions: movedMeta.deletions,
+            diff: movedMeta.diff,
+          })
         }
-        return `Updated ${filePath}`
+        return formatSuccessMessage({
+          action: "Updated",
+          path: filePath,
+          editCount: edits.length,
+          additions: formattedMeta.additions,
+          deletions: formattedMeta.deletions,
+          diff: formattedMeta.diff,
+        })
       }
     }
 
@@ -171,10 +260,25 @@ export async function executeHashlineEditTool(
     }
 
     if (rename && rename !== filePath) {
-      return `Moved ${filePath} to ${rename}`
+      return formatSuccessMessage({
+        action: "Moved",
+        path: effectivePath,
+        previousPath: filePath,
+        editCount: edits.length,
+        additions: meta.additions,
+        deletions: meta.deletions,
+        diff: meta.diff,
+      })
     }
 
-    return `Updated ${effectivePath}`
+    return formatSuccessMessage({
+      action: "Updated",
+      path: effectivePath,
+      editCount: edits.length,
+      additions: meta.additions,
+      deletions: meta.deletions,
+      diff: meta.diff,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (error instanceof HashlineMismatchError) {

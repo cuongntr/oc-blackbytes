@@ -71,13 +71,13 @@ describe("createExploreAgent", () => {
     expect(agent.prompt).toMatch(/detect the language/i)
   })
 
-  it("uses OpenCode core lsp conditionally with local-search fallbacks", () => {
+  it("uses local-search tools and treats LSP diagnostics as secondary findings", () => {
     const agent = createExploreAgent(TEST_MODEL)
 
-    expect(agent.prompt).toContain("OpenCode core `lsp` tool")
-    expect(agent.prompt).toContain("use it conditionally")
-    expect(agent.prompt).toContain("fall back to grep/glob/ast_grep_search/read")
-    expect(agent.prompt).not.toContain("LSP tools")
+    expect(agent.prompt).toContain("Code discovery")
+    expect(agent.prompt).toContain("grep/glob/ast_grep_search/read")
+    expect(agent.prompt).toContain("LSP diagnostics")
+    expect(agent.prompt).not.toContain("OpenCode core `lsp` tool")
   })
 })
 
@@ -224,15 +224,15 @@ describe("createGeneralAgent", () => {
     expect(agent.prompt).toMatch(/general/i)
   })
 
-  it("uses OpenCode core lsp conditionally with local-search fallbacks", () => {
+  it("uses LSP diagnostics guidance without relying on semantic lsp navigation", () => {
     const defaultAgent = createGeneralAgent(TEST_MODEL)
     const gptAgent = createGeneralAgent(TEST_GPT_MODEL)
 
     for (const agent of [defaultAgent, gptAgent]) {
-      expect(agent.prompt).toContain("OpenCode core `lsp`")
-      expect(agent.prompt).toContain("conditionally")
-      expect(agent.prompt).toContain("grep/glob/ast_grep_search/read")
-      expect(agent.prompt).not.toContain("LSP tools")
+      expect(agent.prompt).toContain("OpenCode LSP diagnostics")
+      expect(agent.prompt).toContain("Fix diagnostics caused by your changes")
+      expect(agent.prompt).toContain("grep/glob")
+      expect(agent.prompt).not.toContain("OpenCode core `lsp` tool")
     }
   })
 })

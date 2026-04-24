@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-04-24
+
+### Added
+
+- `hashline_edit` success output includes a Markdown-friendly summary, requested edit count, addition/removal counts, and a bounded fenced `diff` block for review.
+
+### Changed
+
+- Agent LSP guidance is diagnostics-first: agents fix diagnostics caused by their own changes and use bundled search/read tools for discovery instead of relying on experimental semantic `lsp` operations.
+- Documentation describes OpenCode LSP diagnostics as an ambient runtime capability rather than a primary semantic-navigation workflow.
+
+### Removed
+
+- The `/setup-lsp` built-in command has been removed because the experimental semantic `lsp` tool is not reliable enough to promote as a setup workflow.
+
 ## [0.8.1] - 2026-04-24
 
 ### Fixed

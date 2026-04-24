@@ -1,6 +1,6 @@
 # oc-blackbytes
 
-OpenCode plugin for workflow automation. It provisions built-in MCP servers, installs a primary agent plus specialized subagents, registers local search and editing tools, provides guided setup commands, adapts model parameters at runtime, injects compatible chat headers, and loads plugin configuration from JSONC.
+OpenCode plugin for workflow automation. It provisions built-in MCP servers, installs a primary agent plus specialized subagents, registers local search and editing tools, provides the `/setup-models` setup command, adapts model parameters at runtime, injects compatible chat headers, and loads plugin configuration from JSONC.
 
 ## What the plugin does
 
@@ -16,19 +16,19 @@ The plugin wires these OpenCode hook surfaces:
 
 - **Built-in MCP provisioning** — `websearch`, `context7`, and `grep_app`
 - **Built-in agents** — `bytes`, `explore`, `oracle`, `librarian`, and `general`
-- **Built-in commands** — `/setup-models` for agent model assignments and `/setup-lsp` for guided OpenCode core LSP setup
+- **Built-in commands** — `/setup-models` for guided agent model assignments
 - **Per-agent model overrides** — configure `model`, `reasoningEffort`, `temperature`, and `fallback_models`
 - **Provider-aware fallback resolution** — discover connected providers and resolve fallback chains when `model_fallback` is enabled
 - **Runtime model parameter adaptation** — Claude thinking, OpenAI reasoning effort, and provider-option stripping happen automatically from the runtime model family
 - **Bundled tools** — `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`
-- **Hashline editing workflow** — `read` output becomes `LINE#ID|content` and `write` output becomes a concise line-count summary
+- **Hashline editing workflow** — `read` output becomes `LINE#ID|content`, `hashline_edit` applies anchored edits, and successful edit results include an edit summary plus a bounded fenced `diff` block
 - **Dynamic agent resource injection** — every enabled agent prompt gets an `<available_resources>` section describing oc-blackbytes-managed bundled tools, MCPs, and peer agents without implying a complete OpenCode runtime inventory
 - **JSONC config loading** — supports comments and trailing commas in `oc-blackbytes.jsonc`
 - **Structured logging** — writes buffered logs to `/tmp/oc-blackbytes.log`
 - **Binary auto-installation** — caches `rg` and `sg` automatically for bundled search tools
 - **Language matching** — agents respond in the user’s language while keeping code, technical terms, file paths, tool names, and git messages in English
 - **Clarifying questions** — `bytes` has question permission and can ask focused follow-ups when a task is ambiguous
-- **OpenCode core LSP guidance** — Bytes, Explore, and General use the OpenCode core `lsp` tool conditionally for semantic navigation when it is enabled, with immediate fallback to bundled search/read tools
+- **OpenCode LSP diagnostics guidance** — Bytes and General fix diagnostics caused by their changes, while Explore treats diagnostics as secondary findings and uses bundled search/read tools for discovery
 
 ## Installation
 
@@ -96,11 +96,9 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory:
 
 For the full configuration guide, see [docs/configuration.md](docs/configuration.md).
 
-### Built-in setup commands
+### Built-in setup command
 
 Use `/setup-models` to generate or update `oc-blackbytes.jsonc` model assignments for `oracle`, `explore`, `librarian`, and `general`. The command discovers available OpenCode models, recommends role-appropriate assignments, and preserves unrelated plugin config fields when merging changes.
-
-Use `/setup-lsp` to configure OpenCode core LSP support safely. The command targets OpenCode config files such as `config.json`, `opencode.json`, or `opencode.jsonc`, not `oc-blackbytes.jsonc`; explains the experimental `OPENCODE_EXPERIMENTAL_LSP_TOOL=true` and `OPENCODE_EXPERIMENTAL=true` flags; proposes `permission.lsp = "allow"`; and asks for confirmation before editing user config.
 
 ## Built-in agents
 
@@ -124,7 +122,7 @@ Each enabled agent prompt is extended with an `<available_resources>` section as
 
 Disabling a built-in MCP or bundled tool automatically removes it from agent prompts as well as from runtime registration.
 
-The runtime resource section describes resources managed by `oc-blackbytes`. OpenCode core tools such as `lsp` are governed by the OpenCode runtime, feature flags, and permissions rather than by `disabled_tools`.
+The runtime resource section describes resources managed by `oc-blackbytes`. OpenCode LSP diagnostics are governed by the OpenCode runtime and configured language servers rather than by `disabled_tools`.
 
 ## Built-in MCP servers
 
@@ -155,36 +153,16 @@ When `hashline_edit` is enabled:
 
 1. `read` output is rewritten to `LINE#ID|content`
 2. edits reference those exact anchors through `hashline_edit`
-3. successful `write` output is replaced with `File written successfully. N lines written.`
+3. successful `hashline_edit` output includes a Markdown-friendly summary, the number of requested edits, addition/removal counts, and a fenced `diff` block capped at 200 lines
+4. successful `write` output is replaced with `File written successfully. N lines written.`
 
-This keeps editing precise, compact, and safe across repeated changes.
+This keeps editing precise, compact, reviewable, and safe across repeated changes.
 
-## OpenCode core LSP
+## OpenCode LSP diagnostics
 
-OpenCode's experimental core `lsp` tool is available to agents when OpenCode exposes it in the runtime tool inventory. `oc-blackbytes` does not register a bundled `lsp` tool; it documents and prompts for safe use of the OpenCode core capability.
+OpenCode may surface LSP diagnostics such as linting and typechecking messages in tool output, or through a dedicated `diagnostics` tool when its runtime exposes one. `oc-blackbytes` does not register bundled LSP tools or manage language-server lifecycle.
 
-Enable the core tool in the OpenCode process with one of these environment flags:
-
-```bash
-OPENCODE_EXPERIMENTAL_LSP_TOOL=true
-# or
-OPENCODE_EXPERIMENTAL=true
-```
-
-Allow the tool in OpenCode config when you want agents to call it without repeated prompts:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "permission": {
-    "lsp": "allow"
-  }
-}
-```
-
-The core tool supports semantic operations such as `goToDefinition`, `findReferences`, `hover`, `documentSymbol`, `workspaceSymbol`, `goToImplementation`, and call hierarchy operations. It uses 1-based `line` and `character` coordinates. Agents fall back to `glob`, `grep`, `ast_grep_search`, and `read` when `lsp` is unavailable, unconfigured, or inconclusive.
-
-See [docs/configuration.md](docs/configuration.md#opencode-core-lsp-facts) for the exact operation list, argument schema, config precedence notes, and LSP server config shape.
+Agent guidance is diagnostics-first: fix diagnostics caused by the agent's own changes, ignore unrelated diagnostics unless the user explicitly asks, and use `glob`, `grep`, `ast_grep_search`, `read`, and subagents for code discovery. Experimental semantic `lsp` operations are not a primary workflow.
 
 ### AST-aware search and replace
 
@@ -216,7 +194,7 @@ Supported languages:
 | `model_fallback` | `boolean` | `false` | Enables provider discovery and fallback-chain resolution |
 | `websearch.provider` | `"exa" \| "tavily"` | `"exa"` | Selects the built-in websearch backend |
 | `agents` | `Record<string, AgentModelConfig>` | `{}` | Per-agent overrides for `model`, `reasoningEffort`, `temperature`, and `fallback_models` |
-| OpenCode core `lsp` | OpenCode config + env flags | Not a plugin option | Controlled by OpenCode runtime availability, `permission.lsp`, and experimental flags; not affected by `disabled_tools` |
+| OpenCode LSP diagnostics | OpenCode runtime + LSP server config | Not a plugin option | Diagnostics may appear in supported tool output or a core `diagnostics` tool; not affected by `disabled_tools` |
 | `fallback_models` | `string \| (string \| object)[]` | — | Global fallback chain tried after a per-agent chain |
 
 See [docs/configuration.md](docs/configuration.md) for full examples, model recommendations, and fallback behavior.
@@ -259,9 +237,6 @@ The plugin resolves configuration from the active OpenCode config directory and 
 | `TAVILY_API_KEY` | Yes, for Tavily | Enables the Tavily-backed `websearch` MCP |
 | `CONTEXT7_API_KEY` | No | Adds bearer auth to the `context7` MCP |
 | `OPENCODE_CONFIG_DIR` | No | Overrides the OpenCode config directory used for plugin config discovery |
-| `OPENCODE_EXPERIMENTAL_LSP_TOOL` | Yes, for core LSP | Enables OpenCode's experimental core `lsp` tool for the OpenCode process |
-| `OPENCODE_EXPERIMENTAL` | Alternative for core LSP | Enables OpenCode experimental features, including the core `lsp` tool |
-| `OPENCODE_DISABLE_LSP_DOWNLOAD` | No | Disables OpenCode automatic language-server binary downloads without enabling or disabling the `lsp` tool |
 | `XDG_CONFIG_HOME` | No | Influences CLI config discovery on Linux-compatible environments |
 | `XDG_CACHE_HOME` | No | Influences plugin cache resolution on Linux-compatible environments |
 | `LOCALAPPDATA` / `APPDATA` | No | Influences cache and config resolution on Windows |
@@ -348,9 +323,14 @@ oc-blackbytes/
 
 ## Publishing
 
+Releases are published from GitHub Releases. Publishing a release triggers `.github/workflows/publish.yml`, which installs dependencies, runs checks and tests, builds `dist/index.js`, and publishes the package to npm with provenance.
+
 ```bash
+bun run check
 bun run build
-npm publish
+git tag v0.8.2
+git push origin v0.8.2
+gh release create v0.8.2 --title "v0.8.2" --notes-file <release-notes.md>
 ```
 
 ## License

@@ -10,7 +10,6 @@
  */
 import { describe, expect, it } from "bun:test"
 import { createBuiltinCommands } from "../../src/extensions/commands"
-import { setupLsp } from "../../src/extensions/commands/setup-lsp"
 import { setupModels } from "../../src/extensions/commands/setup-models"
 import { handleCommandConfig } from "../../src/handlers/config-handler/command-config-handler"
 import type { ConfigContext } from "../../src/handlers/config-handler/types"
@@ -41,7 +40,7 @@ describe("handleCommandConfig — no user commands", () => {
 
     expect(ctx.config.command).toBeDefined()
     expect(ctx.config.command?.["setup-models"]).toBeDefined()
-    expect(ctx.config.command?.["setup-lsp"]).toBeDefined()
+    expect(ctx.config.command?.["setup-lsp"]).toBeUndefined()
   })
 
   it("setup-models matches the exported setupModels definition verbatim", () => {
@@ -50,14 +49,6 @@ describe("handleCommandConfig — no user commands", () => {
 
     const registered = ctx.config.command?.["setup-models"]
     expect(registered).toEqual(setupModels)
-  })
-
-  it("setup-lsp matches the exported setupLsp definition verbatim", () => {
-    const ctx = makeCtx()
-    handleCommandConfig(ctx)
-
-    const registered = ctx.config.command?.["setup-lsp"]
-    expect(registered).toEqual(setupLsp)
   })
 
   it("setup-models has the expected description string", () => {
@@ -86,28 +77,15 @@ describe("handleCommandConfig — no user commands", () => {
     expect(typeof cmd.template).toBe("string")
     expect(cmd.template.length).toBeGreaterThan(0)
   })
-
-  it("setup-lsp is a Bytes-guided OpenCode core LSP setup template", () => {
-    const ctx = makeCtx()
-    handleCommandConfig(ctx)
-
-    const cmd = ctx.config.command?.["setup-lsp"] as typeof setupLsp
-    expect(cmd.agent).toBe("bytes")
-    expect(cmd.template).toContain("OpenCode's experimental built-in core")
-    expect(cmd.template).toContain("OPENCODE_EXPERIMENTAL_LSP_TOOL=true")
-    expect(cmd.template).toContain("permission")
-    expect(cmd.template).toContain("explicitly confirms")
-    expect(cmd.template).toContain("not the oc-blackbytes plugin")
-  })
 })
 
 describe("createBuiltinCommands", () => {
-  it("contains setup-models and setup-lsp", () => {
+  it("contains only setup-models", () => {
     const commands = createBuiltinCommands()
 
     expect(commands["setup-models"]).toEqual(setupModels)
-    expect(commands["setup-lsp"]).toEqual(setupLsp)
-    expect(Object.keys(commands).sort()).toEqual(["setup-lsp", "setup-models"])
+    expect(commands["setup-lsp"]).toBeUndefined()
+    expect(Object.keys(commands)).toEqual(["setup-models"])
   })
 })
 
@@ -130,7 +108,7 @@ describe("handleCommandConfig — user command with distinct name", () => {
     // Built-in also present
     expect(ctx.config.command?.["setup-models"]).toBeDefined()
     expect(ctx.config.command?.["setup-models"]).toEqual(setupModels)
-    expect(ctx.config.command?.["setup-lsp"]).toEqual(setupLsp)
+    expect(ctx.config.command?.["setup-lsp"]).toBeUndefined()
   })
 
   it("built-in setup-models is unchanged when user adds a distinct command", () => {
@@ -138,7 +116,7 @@ describe("handleCommandConfig — user command with distinct name", () => {
     handleCommandConfig(ctx)
 
     expect(ctx.config.command?.["setup-models"]).toEqual(setupModels)
-    expect(ctx.config.command?.["setup-lsp"]).toEqual(setupLsp)
+    expect(ctx.config.command?.["setup-lsp"]).toBeUndefined()
   })
 })
 
@@ -172,9 +150,9 @@ describe("handleCommandConfig — user command overrides built-in (user-wins)", 
     expect(registered.description).not.toBe(setupModels.description)
   })
 
-  it("preserves user definition when user provides 'setup-lsp'", () => {
+  it("preserves user-defined 'setup-lsp' because it is no longer built in", () => {
     const userOverride = {
-      description: "My override for setup-lsp",
+      description: "My custom setup-lsp command",
       template: "custom lsp setup template",
       agent: "oracle",
     }
@@ -198,7 +176,7 @@ describe("handleCommandConfig — edge cases", () => {
     handleCommandConfig(ctx)
 
     expect(ctx.config.command?.["setup-models"]).toBeDefined()
-    expect(ctx.config.command?.["setup-lsp"]).toBeDefined()
+    expect(ctx.config.command?.["setup-lsp"]).toBeUndefined()
   })
 
   it("only registers built-in commands with no extra keys from handler", () => {
@@ -207,7 +185,7 @@ describe("handleCommandConfig — edge cases", () => {
 
     const keys = Object.keys(ctx.config.command ?? {})
     expect(keys).toContain("setup-models")
-    expect(keys).toContain("setup-lsp")
-    expect(keys).toHaveLength(2)
+    expect(keys).not.toContain("setup-lsp")
+    expect(keys).toHaveLength(1)
   })
 })

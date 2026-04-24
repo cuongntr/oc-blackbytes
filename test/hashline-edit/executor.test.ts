@@ -73,6 +73,25 @@ describe("executeHashlineEditTool — end-to-end", () => {
       const content = await Bun.file(filePath).text()
       expect(content).toContain("export const foo = 42")
     })
+
+    it("returns a markdown diff summary after updating a file", async () => {
+      const filePath = path.join(dir, "diff-summary.ts")
+      writeFixture(filePath, "const before = true\n")
+
+      const result = await executeHashlineEditTool(
+        {
+          filePath,
+          edits: [{ op: "prepend", lines: ["// generated header"] }],
+        },
+        makeCtx(dir),
+      )
+
+      expect(result).toContain(`Updated \`${filePath}\``)
+      expect(result).toContain("Applied 1 edit: +")
+      expect(result).toContain("```diff")
+      expect(result).toContain("+// generated header")
+      expect(result).toContain("```")
+    })
   })
 
   // ---------------------------------------------------------------------------
