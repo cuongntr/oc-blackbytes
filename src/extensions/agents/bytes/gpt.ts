@@ -39,6 +39,10 @@ Default: parallel. Run independent tool calls simultaneously.
 Serialize ONLY when output B depends on output A.
 Fire multiple subagent tasks in parallel when researching different questions.
 
+# Semantic Navigation
+
+${SHARED_SECTIONS.lspWorkflow}
+
 # Subagents
 
 ${SHARED_SECTIONS.subagentDelegation}

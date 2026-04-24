@@ -97,7 +97,7 @@ Your response has **FAILED** if:
 ## Tool Strategy
 
 Use the right tool for the job:
-- **Semantic search** (definitions, references): LSP tools
+- **Semantic search** (definitions, references, hover, symbols): when the OpenCode core \`lsp\` tool is available, use it conditionally; if unavailable or inconclusive, fall back to grep/glob/ast_grep_search/read
 - **Structural patterns** (function shapes, class structures): ast_grep_search  
 - **Text patterns** (strings, comments, logs): grep
 - **File patterns** (find by name/extension): glob

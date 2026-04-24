@@ -54,6 +54,24 @@ describe("buildRuntimeContextSection", () => {
     expect(section).not.toContain("hashline_edit")
   })
 
+  it("describes bundled tools as plugin-managed without implying complete runtime inventory", () => {
+    const context: AgentRuntimeContext = {
+      enabledTools: ["hashline_edit", "grep"],
+      enabledMcps: [],
+      enabledAgents: {},
+    }
+    const section = buildRuntimeContextSection(context, "bytes")
+
+    expect(section).toContain("oc-blackbytes-managed resources")
+    expect(section).toContain("Bundled tools (oc-blackbytes-managed): hashline_edit, grep")
+    expect(section).toContain(
+      "OpenCode core tools are governed by runtime availability and permissions",
+    )
+    expect(section).not.toContain("Only reference tools, MCP servers, and agents listed here")
+    const bundledToolsLine = section.split("\n").find((line) => line.startsWith("Bundled tools"))
+    expect(bundledToolsLine).not.toContain("lsp")
+  })
+
   it("returns empty string when all resources are empty", () => {
     const context: AgentRuntimeContext = {
       enabledTools: [],

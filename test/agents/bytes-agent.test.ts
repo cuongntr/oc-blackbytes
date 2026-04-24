@@ -54,6 +54,18 @@ function assertLanguageMatching(prompt: string | undefined) {
   expect(prompt ?? "").toMatch(/detect the language/i)
 }
 
+function assertConditionalLspWorkflow(prompt: string) {
+  expect(prompt).toContain("OpenCode core `lsp` tool")
+  expect(prompt).toContain("use it conditionally")
+  expect(prompt).toContain("goToDefinition")
+  expect(prompt).toContain("findReferences")
+  expect(prompt).toContain("hover")
+  expect(prompt).toContain("documentSymbol")
+  expect(prompt).toContain("workspaceSymbol")
+  expect(prompt).toContain("grep`, `glob`, `ast_grep_search`, and `read")
+  expect(prompt).toContain("not an oc-blackbytes bundled tool")
+}
+
 // ---------------------------------------------------------------------------
 // createBytesAgent — default (Claude / unknown) variant
 // ---------------------------------------------------------------------------
@@ -202,6 +214,30 @@ describe("createBytesAgent — Gemini variant", () => {
 describe("createBytesAgent.mode static property", () => {
   it("exposes mode='primary' on the factory function", () => {
     expect(createBytesAgent.mode).toBe("primary")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// OpenCode core LSP workflow
+// ---------------------------------------------------------------------------
+describe("Bytes prompt OpenCode core LSP workflow", () => {
+  it("includes conditional LSP guidance in every prompt variant", () => {
+    assertConditionalLspWorkflow(buildBytesDefaultPrompt(true))
+    assertConditionalLspWorkflow(buildBytesGptPrompt(true))
+    assertConditionalLspWorkflow(buildBytesGeminiPrompt(true))
+  })
+
+  it("does not list lsp as an oc-blackbytes bundled tool", () => {
+    const prompts = [
+      buildBytesDefaultPrompt(true),
+      buildBytesGptPrompt(true),
+      buildBytesGeminiPrompt(true),
+    ]
+
+    for (const prompt of prompts) {
+      expect(prompt).not.toContain("Bundled tools: lsp")
+      expect(prompt).not.toContain("oc-blackbytes bundled tool: `lsp`")
+    }
   })
 })
 

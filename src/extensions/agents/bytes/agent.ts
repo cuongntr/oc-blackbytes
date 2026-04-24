@@ -104,6 +104,17 @@ You have access to specialized subagents via the \`task\` tool. **Default to del
 - A task has independent parts that can be implemented simultaneously → fire multiple General in parallel`,
 
   /**
+   * Conditional OpenCode core LSP workflow for semantic code intelligence.
+   */
+  lspWorkflow: `### Semantic Navigation with OpenCode Core LSP
+
+When the OpenCode core \`lsp\` tool is available, use it conditionally for semantic code intelligence: definitions (\`goToDefinition\`), references (\`findReferences\`), hover/type context (\`hover\`), outlines (\`documentSymbol\`), workspace symbols (\`workspaceSymbol\`), implementations (\`goToImplementation\`), and call hierarchy when useful.
+
+Do not use \`lsp\` for simple filename or text searches where \`glob\` or \`grep\` is cheaper. If \`lsp\` is unavailable, fails, has no configured language server, or returns inconclusive results, immediately fall back to \`grep\`, \`glob\`, \`ast_grep_search\`, and \`read\`.
+
+\`lsp\` is an OpenCode core tool governed by runtime availability and permissions; it is not an oc-blackbytes bundled tool.`,
+
+  /**
    * Skills awareness — instructions for proactively loading domain-specific skills.
    */
   skillsAwareness: `### Skills

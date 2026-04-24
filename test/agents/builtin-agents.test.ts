@@ -70,6 +70,15 @@ describe("createExploreAgent", () => {
     const agent = createExploreAgent(TEST_MODEL)
     expect(agent.prompt).toMatch(/detect the language/i)
   })
+
+  it("uses OpenCode core lsp conditionally with local-search fallbacks", () => {
+    const agent = createExploreAgent(TEST_MODEL)
+
+    expect(agent.prompt).toContain("OpenCode core `lsp` tool")
+    expect(agent.prompt).toContain("use it conditionally")
+    expect(agent.prompt).toContain("fall back to grep/glob/ast_grep_search/read")
+    expect(agent.prompt).not.toContain("LSP tools")
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -213,5 +222,17 @@ describe("createGeneralAgent", () => {
   it("prompt instructs not to spawn other General agents", () => {
     const agent = createGeneralAgent(TEST_MODEL)
     expect(agent.prompt).toMatch(/general/i)
+  })
+
+  it("uses OpenCode core lsp conditionally with local-search fallbacks", () => {
+    const defaultAgent = createGeneralAgent(TEST_MODEL)
+    const gptAgent = createGeneralAgent(TEST_GPT_MODEL)
+
+    for (const agent of [defaultAgent, gptAgent]) {
+      expect(agent.prompt).toContain("OpenCode core `lsp`")
+      expect(agent.prompt).toContain("conditionally")
+      expect(agent.prompt).toContain("grep/glob/ast_grep_search/read")
+      expect(agent.prompt).not.toContain("LSP tools")
+    }
   })
 })

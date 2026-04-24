@@ -2,7 +2,7 @@
 
 ## Project
 
-OpenCode plugin for workflow automation. Provides built-in MCP server provisioning, built-in agents, bundled local tools, chat header injection for compatible providers, hashline post-processing for structured editing, config management via JSONC, and structured file logging.
+OpenCode plugin for workflow automation. Provides built-in MCP server provisioning, built-in agents, built-in setup commands, bundled local tools, OpenCode core LSP guidance, chat header injection for compatible providers, hashline post-processing for structured editing, config management via JSONC, and structured file logging.
 
 - **Entry point:** `src/index.ts` → `dist/index.js`
 - **Runtime:** Bun (build, test, runtime)
@@ -14,7 +14,7 @@ OpenCode plugin for workflow automation. Provides built-in MCP server provisioni
 ```
 bun test          # run tests
 bun run build     # compile src/index.ts → dist/index.js
-bun run check     # lint + format check (Biome)
+bun run check     # Biome check + unit tests + e2e tests
 bun run lint      # lint only
 bun run format    # format and fix
 ```
@@ -53,7 +53,7 @@ src/
 │   ├── command-config-handler.ts # Command config handling (built-in command registration)
 └── extensions/
     ├── agents/                 # bytes, explore, oracle, librarian, and general definitions
-    ├── commands/               # Built-in slash commands (setup-models)
+    ├── commands/               # Built-in slash commands (setup-models, setup-lsp)
     ├── hooks/                  # Hook-related extension helpers
     ├── hooks/                  # Hook-related extension helpers
     ├── mcp/                    # Built-in MCP server configs (websearch, context7, grep.app)
@@ -75,9 +75,9 @@ src/
 - **`handlers/tool-handler.ts`** — Registers `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`, filtered by `disabled_tools` and `hashline_edit`.
 - **`handlers/tool-execute-after-handler.ts`** — Rewrites `read` output into `LINE#ID|content` anchors and normalizes successful `write` output into line-count summaries when hashline editing is enabled.
 - **`extensions/mcp/`** — Factory for built-in MCP servers: websearch (Exa/Tavily), Context7, grep.app. Controlled by plugin config.
-- **`extensions/agents/`** — Factory for built-in agents: `bytes`, `explore`, `oracle`, `librarian`, and `general`, including model-aware prompt selection, language matching (all agents detect user language and respond in kind), and OpenCode `permission` map generation. After config merging, each agent's prompt is appended with an `<available_resources>` section listing the enabled tools, MCP servers, and peer agents.
+- **`extensions/agents/`** — Factory for built-in agents: `bytes`, `explore`, `oracle`, `librarian`, and `general`, including model-aware prompt selection, language matching (all agents detect user language and respond in kind), conditional OpenCode core `lsp` guidance, and OpenCode `permission` map generation. After config merging, each agent's prompt is appended with an `<available_resources>` section listing oc-blackbytes-managed enabled tools, MCP servers, and peer agents.
 - **`extensions/tools/`** — Tool definitions for hashline editing, AST-aware search/replace, regex search, and glob search.
-- **`extensions/commands/`** — Definitions for built-in slash commands. Each command specifies a template, description, and optional agent/model binding.
+- **`extensions/commands/`** — Definitions for built-in slash commands: `/setup-models` for plugin model assignment and `/setup-lsp` for guided OpenCode core LSP setup. Each command specifies a template, description, and optional agent/model binding.
 
 ### Plugin Flow
 
@@ -94,12 +94,13 @@ src/
 
 - Types imported from `@opencode-ai/plugin` (`Plugin`, `Hooks`, `PluginInput`) and `@opencode-ai/sdk/v2` (`Config`, `McpRemoteConfig`).
 - `tsconfig.json` exists for IDE support (`noEmit: true`). Build uses `bun build` directly.
-- Tests use `bun:test`. Test file: `test/config.test.ts`. Uses temp dirs and `OPENCODE_CONFIG_DIR` env override for isolation.
+- Tests use `bun:test`. Test suites live under `test/` and include agent, handler, MCP, tool, config, and e2e coverage. Uses temp dirs and `OPENCODE_CONFIG_DIR` env override for isolation.
 - `dist/` is a build artifact — do not edit directly.
 - Built-in MCPs: `websearch`, `context7`, `grep_app`.
 - Built-in agents: `bytes`, `explore`, `oracle`, `librarian`, `general`.
 - Bundled tools: `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, `glob`.
-- Built-in commands: `setup-models`.
+- Built-in commands: `setup-models`, `setup-lsp`.
+- OpenCode core `lsp` is not an oc-blackbytes bundled tool. Prompt guidance treats it as an ambient OpenCode runtime capability controlled by `OPENCODE_EXPERIMENTAL_LSP_TOOL` / `OPENCODE_EXPERIMENTAL`, `permission.lsp`, and OpenCode LSP server configuration.
 - Language matching is built into every agent's prompt: agents detect the user's language and respond in the same language; code, technical terms, file paths, tool names, and git messages remain in English.
 - The `bytes` agent has `question: "allow"` permission, enabling it to ask clarifying questions via OpenCode's built-in question tool when a task is ambiguous.
 

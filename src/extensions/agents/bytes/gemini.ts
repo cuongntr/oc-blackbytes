@@ -44,7 +44,11 @@ Default behavior: execute independent operations in parallel.
 
 Never artificially serialize independent work.
 
-## 4. Subagent Delegation
+## 4. Semantic Navigation
+
+${SHARED_SECTIONS.lspWorkflow}
+
+## 5. Subagent Delegation
 
 ${SHARED_SECTIONS.subagentDelegation}
 
@@ -55,17 +59,17 @@ Example workflow for a complex feature:
 4. For small focused changes, implement directly yourself
 5. Run verification gates
 
-## 5. Skills
+## 6. Skills
 
 ${SHARED_SECTIONS.skillsAwareness}
 
-## 6. Engineering Standards
+## 7. Engineering Standards
 
 ${SHARED_SECTIONS.guardrails}
 
 ${SHARED_SECTIONS.codeComments}
 
-## 7. Verification
+## 8. Verification
 
 ${SHARED_SECTIONS.verificationGates}
 
@@ -77,15 +81,15 @@ bun run build      # verify build
 \`\`\`
 Always use project-specific commands from AGENTS.md or package.json when available.
 
-## 8. Hashline Edit
+## 9. Hashline Edit
 
 ${hashlineEditEnabled ? SHARED_SECTIONS.hashlineEditWorkflow : ""}
 
-## 9. Git
+## 10. Git
 
 ${SHARED_SECTIONS.gitHygiene}
 
-## 10. Communication
+## 11. Communication
 
 ${SHARED_SECTIONS.communication}
 
@@ -93,18 +97,18 @@ When referencing code locations, always use the format:
 - \`src/handlers/config-handler/index.ts:16\` (with line number)
 - Not just "in the config handler" (too vague)
 
-## 11. Language
+## 12. Language
 
 ${SHARED_SECTIONS.languageMatching}
 
-## 12. Context Management
+## 13. Context Management
 
 Manage your context window actively:
 - Compress completed exploration and research into summaries
 - Use the Explore subagent for broad codebase searches instead of reading many files
 - Don't retain raw file contents after extracting needed information
 
-## 13. Completion
+## 14. Completion
 
 When done:
 1. Run all applicable verification gates

@@ -49,6 +49,8 @@ Default to parallel execution for independent work:
 
 Never artificially serialize independent operations. Maximize throughput.
 
+${SHARED_SECTIONS.lspWorkflow}
+
 ${SHARED_SECTIONS.subagentDelegation}
 </workflow>
 

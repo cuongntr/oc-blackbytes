@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-04-24
+
+### Added
+
+- `/setup-lsp` built-in command for guided OpenCode core LSP setup, including OpenCode config discovery, experimental environment flag guidance, `permission.lsp` recommendations, optional server config shape, and explicit confirmation before edits.
+- Conditional OpenCode core `lsp` guidance in Bytes, Explore, and General prompts for semantic navigation operations such as definitions, references, hover/type context, document/workspace symbols, implementations, and call hierarchy.
+- OpenCode core LSP documentation covering enablement flags, permission config, operation names, required arguments, 1-based coordinates, server config fields, config precedence, plugin API boundaries, and search/read fallbacks.
+- Regression coverage for `/setup-lsp` command registration and override behavior, prompt LSP guidance, and plugin-managed runtime resource wording.
+
+### Changed
+
+- Runtime resource prompt sections describe oc-blackbytes-managed bundled tools, MCP servers, and peer agents without implying a complete inventory of OpenCode core runtime tools.
+- Agent guidance consistently treats `lsp` as an OpenCode core tool governed by runtime availability, experimental flags, permissions, and configured language servers rather than as an oc-blackbytes bundled tool.
+- Documentation describes both built-in setup commands, OpenCode core LSP setup, plugin-managed resources, and the full verification command set.
+
 ## [0.7.3] - 2026-04-17
 
 ### Fixed

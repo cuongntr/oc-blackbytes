@@ -78,6 +78,7 @@ You operate in a fresh context each time. The primary agent's prompt contains al
 - **Read files** before editing — always understand current state first.
 - **Batch independent tool calls** — run reads, searches, and other independent operations in parallel.
 - **Use grep/glob** to find related code when the task involves patterns across files.
+- **Use OpenCode core \`lsp\` conditionally** for semantic navigation when available: definitions (\`goToDefinition\`), references (\`findReferences\`), hover/type context (\`hover\`), symbols (\`documentSymbol\`, \`workspaceSymbol\`), implementations, and call hierarchy. Fall back immediately to grep/glob/ast_grep_search/read when \`lsp\` is unavailable or unhelpful.
 - **Run verification** after changes: type check, lint, tests as applicable.
 - **Use Explore subagent** if you need to search broadly across the codebase.
 </tool_usage>
@@ -134,7 +135,7 @@ Execute, don't plan. Be thorough — no TODOs or placeholder code unless explici
 
 # Tool Usage
 
-Read files before editing. Batch independent tool calls in parallel. Use grep/glob for pattern discovery across files. Run verification after changes. Use Explore subagent for broad codebase searches.
+Read files before editing. Batch independent tool calls in parallel. Use grep/glob for pattern discovery across files. When the OpenCode core \`lsp\` tool is available, use it conditionally for semantic definitions, references, hover/type context, symbols, implementations, and call hierarchy; fall back immediately to grep/glob/ast_grep_search/read when unavailable or unhelpful. Run verification after changes. Use Explore subagent for broad codebase searches.
 
 # Output
 

@@ -1,11 +1,11 @@
 import type { AgentConfig } from "@opencode-ai/sdk/v2"
 
 /**
- * Runtime resource information available to agents.
+ * Runtime oc-blackbytes-managed resource information available to agents.
  * Computed after all config merging and disabling is complete.
  */
 export type AgentRuntimeContext = {
-  /** Names of enabled bundled tools (e.g., "hashline_edit", "grep") */
+  /** Names of enabled oc-blackbytes bundled tools (e.g., "hashline_edit", "grep") */
   enabledTools: string[]
   /** Names of enabled MCP servers (e.g., "websearch", "context7") */
   enabledMcps: string[]
@@ -22,7 +22,7 @@ const BUILTIN_MCP_DESCRIPTIONS: Record<string, string> = {
 
 /**
  * Builds a runtime context section to append to an agent's prompt.
- * Lists available resources so the agent knows what it can and cannot use.
+ * Lists oc-blackbytes-managed resources injected by this plugin.
  *
  * @param context - The runtime context with enabled resources
  * @param agentName - Name of the agent receiving this section (excluded from agent list)
@@ -35,7 +35,7 @@ export function buildRuntimeContextSection(
 
   // Bundled tools
   if (context.enabledTools.length > 0) {
-    lines.push(`Bundled tools: ${context.enabledTools.join(", ")}`)
+    lines.push(`Bundled tools (oc-blackbytes-managed): ${context.enabledTools.join(", ")}`)
   }
 
   // MCP servers with descriptions
@@ -58,7 +58,7 @@ export function buildRuntimeContextSection(
   if (lines.length === 0) return ""
 
   return `\n<available_resources>
-The following resources are enabled in this session. Only reference tools, MCP servers, and agents listed here — others may be disabled or unavailable.
+The following oc-blackbytes-managed resources are enabled in this session. Use listed bundled tools, MCP servers, and peer agents when they match the task. OpenCode core tools are governed by runtime availability and permissions.
 
 ${lines.join("\n")}
 </available_resources>`
