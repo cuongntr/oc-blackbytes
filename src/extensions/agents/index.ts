@@ -2,5 +2,6 @@ export { BYTES_DESCRIPTION, BYTES_PROMPT_METADATA, createBytesAgent } from "./by
 export { createExploreAgent, EXPLORE_PROMPT_METADATA } from "./explore"
 export { createLibrarianAgent, LIBRARIAN_PROMPT_METADATA } from "./librarian"
 export { createOracleAgent, ORACLE_PROMPT_METADATA } from "./oracle"
+export { createReviewerAgent, REVIEWER_PROMPT_METADATA } from "./reviewer"
 export * from "./types"
 export * from "./utils"

@@ -4,6 +4,7 @@ import { createExploreAgent } from "../../src/extensions/agents/explore"
 import { createGeneralAgent } from "../../src/extensions/agents/general"
 import { createLibrarianAgent } from "../../src/extensions/agents/librarian"
 import { createOracleAgent } from "../../src/extensions/agents/oracle"
+import { createReviewerAgent } from "../../src/extensions/agents/reviewer"
 
 const TEST_MODEL = "claude-3-5-sonnet"
 const TEST_GPT_MODEL = "gpt-4o"
@@ -169,6 +170,46 @@ describe("createLibrarianAgent", () => {
 
   it("prompt contains language-matching instructions", () => {
     const agent = createLibrarianAgent(TEST_MODEL)
+    expect(agent.prompt).toMatch(/detect the language/i)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// reviewer
+// ---------------------------------------------------------------------------
+
+describe("createReviewerAgent", () => {
+  it("returns a read-only reviewer agent", () => {
+    const agent = createReviewerAgent(TEST_MODEL)
+    assertAgentShape(agent, { name: "reviewer" })
+    expect(agent.description).toContain("Read-only")
+    expect(agent.description).toContain("code reviewer")
+  })
+
+  it("sets mode to 'subagent'", () => {
+    const agent = createReviewerAgent(TEST_MODEL)
+    expect(agent.mode).toBe("subagent")
+    expect(createReviewerAgent.mode).toBe("subagent")
+  })
+
+  it("uses the provided model and low temperature", () => {
+    const agent = createReviewerAgent("gpt-review")
+    expect(agent.model).toBe("gpt-review")
+    expect(agent.temperature).toBe(0.1)
+  })
+
+  it("denies all write-capable tools", () => {
+    const agent = createReviewerAgent(TEST_MODEL)
+    const denied = ["write", "edit", "apply_patch", "hashline_edit", "ast_grep_replace", "compress"]
+    for (const tool of denied) {
+      expect(agent.permission?.[tool]).toBe("deny")
+    }
+  })
+
+  it("prompt contains fresh-eyes review and language-matching instructions", () => {
+    const agent = createReviewerAgent(TEST_MODEL)
+    expect(agent.prompt).toContain("fresh eyes")
+    expect(agent.prompt).toContain("Do not modify files")
     expect(agent.prompt).toMatch(/detect the language/i)
   })
 })

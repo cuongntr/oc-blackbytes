@@ -11,6 +11,7 @@
  * - explore: Cheapest/fastest models. Low temperature for deterministic search.
  * - librarian: Cheap but slightly more capable for research synthesis.
  * - general: Mid-tier coding models. Bytes scopes tasks for it, so no flagship needed.
+ * - reviewer: Mid/high-tier coding models with low temperature for careful review.
  * - bytes: No chain — respects the user's UI model selection.
  */
 
@@ -48,5 +49,11 @@ export const BUILTIN_FALLBACK_CHAINS: Record<string, FallbackChainEntry[]> = {
     { model: "kimi-k2.5", providers: ["kimi"] },
     { model: "gpt-5.4-mini", providers: ["openai", "github-copilot"] },
     { model: "gemini-3.1-pro", providers: ["google"] },
+  ],
+
+  reviewer: [
+    { model: "claude-sonnet-4-6", providers: ["anthropic", "github-copilot"], temperature: 0.1 },
+    { model: "gpt-5.4-mini", providers: ["openai", "github-copilot"], temperature: 0.1 },
+    { model: "gemini-3.1-pro", providers: ["google"], temperature: 0.1 },
   ],
 }

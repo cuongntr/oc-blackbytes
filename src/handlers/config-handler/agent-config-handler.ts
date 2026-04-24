@@ -5,6 +5,7 @@ import { createExploreAgent } from "../../extensions/agents/explore"
 import { createGeneralAgent } from "../../extensions/agents/general"
 import { createLibrarianAgent } from "../../extensions/agents/librarian"
 import { createOracleAgent } from "../../extensions/agents/oracle"
+import { createReviewerAgent } from "../../extensions/agents/reviewer"
 import {
   appendRuntimeContextToAgents,
   computeRuntimeContext,
@@ -36,6 +37,7 @@ const BUILTIN_AGENT_FACTORIES = {
   oracle: createOracleAgent,
   librarian: createLibrarianAgent,
   general: createGeneralAgent,
+  reviewer: createReviewerAgent,
 } as const
 
 /**
@@ -45,7 +47,7 @@ const BUILTIN_AGENT_FACTORIES = {
  * Model parameter handling:
  * - Primary agent (bytes): model param selects prompt variant only;
  *   the returned config does NOT set `model` so it respects the user's UI selection.
- * - Subagents (explore, oracle, librarian, general): model param is passed through.
+ * - Subagents (explore, oracle, librarian, general, reviewer): model param is passed through.
  *   When empty, OpenCode falls back to the default model.
  *
  * Per-agent overrides (from plugin config `agents` field):

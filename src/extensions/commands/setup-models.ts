@@ -34,13 +34,14 @@ Based on the available models, determine the best assignment for each agent role
 | **explore** | Codebase search, read-only | Fast, cheap, good tool calling | Small/fast model |
 | **librarian** | Documentation research, read-only | Good tool calling, summarization | Small/fast model |
 | **general** | Multi-file implementation executor | Strong coding, moderate reasoning | Mid-tier coding model |
+| **reviewer** | Read-only code review | Strong bug finding, careful reasoning, good diff/context reading | Mid/high-tier coding model |
 
 ### Model Preference (per tier)
 
 **Flagship tier** (oracle): Prefer cross-provider diversity. If user's primary is Claude, prefer GPT for oracle and vice versa.
 - claude-opus-4-6, gpt-5.4, gemini-3.1-pro
 
-**Mid-tier** (general): Good coding models, cost-effective.
+**Mid/high-tier coding tier** (general, reviewer): Strong coding/review models, cost-effective but not tiny.
 - claude-sonnet-4-6, gpt-5.4-mini, kimi-k2.5, gemini-3.1-pro
 
 **Small/fast tier** (explore, librarian): Cheapest available with decent tool calling.
@@ -49,10 +50,11 @@ Based on the available models, determine the best assignment for each agent role
 ### Key Rules
 1. **bytes**: Do NOT include in the agents config — it respects the user's UI model selection
 2. **oracle**: Pick a flagship from a DIFFERENT provider than the user's likely primary model for diversity
-3. **explore & librarian**: Pick the cheapest/fastest available model — they are read-only search agents
+3. **explore & librarian**: Pick the cheapest/fastest available model — they are read-only search/research agents
 4. **general**: Pick a solid mid-tier coding model
-5. Only assign models from providers that are actually connected/available
-6. Include the provider prefix (e.g., "anthropic/claude-sonnet-4-6", "openai/gpt-5.4")
+5. **reviewer**: Pick a mid/high-tier coding model, preferably from a different provider than the user's primary model for fresh perspective; use low temperature
+6. Only assign models from providers that are actually connected/available
+7. Include the provider prefix (e.g., "anthropic/claude-sonnet-4-6", "openai/gpt-5.4")
 
 ## Step 4: Generate & Write Config
 
@@ -69,7 +71,8 @@ Use this structure:
     "oracle": { "model": "<provider>/<model>" },
     "explore": { "model": "<provider>/<model>" },
     "librarian": { "model": "<provider>/<model>" },
-    "general": { "model": "<provider>/<model>" }
+    "general": { "model": "<provider>/<model>" },
+    "reviewer": { "model": "<provider>/<model>", "temperature": 0.1 }
   }
 }
 \`\`\`

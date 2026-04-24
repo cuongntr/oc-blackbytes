@@ -43,7 +43,7 @@ describe("E2E 14.1: bootstrap with minimal config", () => {
     expect(mcp?.grep_app).toBeDefined()
   })
 
-  it("provisions all built-in agents (bytes, explore, oracle, librarian, general)", async () => {
+  it("provisions all built-in agents (bytes, explore, oracle, librarian, general, reviewer)", async () => {
     const tmp = makeTmpDir("oc-bb-bootstrap-agents-")
     const result = await runE2EScenario({
       scenario: "bootstrap-agents",
@@ -76,6 +76,7 @@ describe("E2E 14.1: bootstrap with minimal config", () => {
     expect(agent?.oracle).toBeDefined()
     expect(agent?.librarian).toBeDefined()
     expect(agent?.general).toBeDefined()
+    expect(agent?.reviewer).toBeDefined()
   })
 
   it("sets default_agent=bytes", async () => {
@@ -137,6 +138,8 @@ describe("E2E 14.1: bootstrap with minimal config", () => {
     expect(command).toBeDefined()
     // At least one built-in command should be registered (e.g. setup-models)
     expect(Object.keys(command).length).toBeGreaterThan(0)
+    expect(command?.["setup-models"]).toBeDefined()
+    expect(command?.review).toBeDefined()
   })
 
   it("registers bundled tools (hashline_edit, ast_grep_search, grep, glob)", async () => {

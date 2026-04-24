@@ -6,6 +6,7 @@ This guide covers the current `oc-blackbytes.jsonc` configuration surface, agent
 
 - [Config file location](#config-file-location)
 - [Quick setup with `/setup-models`](#quick-setup-with-setup-models)
+- [Code review with `/review`](#code-review-with-review)
 - [Full config reference](#full-config-reference)
 - [Built-in agents](#built-in-agents)
 - [Per-agent model configuration](#per-agent-model-configuration)
@@ -41,6 +42,19 @@ It:
 4. writes or merges plugin config in JSONC format
 
 When a config file already exists, the command preserves unrelated fields and merges the generated `agents` and `model_fallback` settings into the existing file.
+
+## Code review with `/review`
+
+`/review` is the built-in command for reviewing code changes. It runs as a subtask pinned to the read-only `reviewer` subagent and does not modify files.
+
+Review targets:
+
+- no arguments: unstaged changes, staged changes, and untracked files
+- commit hash: `git show <commit>`
+- branch name: `git diff <branch>...HEAD`
+- PR URL or number: `gh pr view <pr>` and `gh pr diff <pr>`
+
+The reviewer reads full-file context and nearby conventions before reporting concrete High, Medium, or Low severity findings.
 
 
 ## Full config reference
@@ -78,6 +92,10 @@ When a config file already exists, the command preserves unrelated fields and me
     },
     "general": {
       "model": "anthropic/claude-sonnet-4-6"
+    },
+    "reviewer": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "temperature": 0.1
     }
   },
 
@@ -110,9 +128,10 @@ The plugin installs these agents into the final OpenCode config:
 |---|---|---|---|
 | `bytes` | Primary | End-to-end coding agent | Respects the model selected in the OpenCode UI |
 | `explore` | Subagent | Read-only codebase search | Optimized for fast, parallel discovery |
-| `oracle` | Subagent | Read-only reasoning advisor | Used for architecture, hard debugging, and self-review |
+| `oracle` | Subagent | Read-only reasoning advisor | Used for architecture, hard debugging, and deep design review |
 | `librarian` | Subagent | Read-only external research | Focused on docs, remote repos, and usage examples |
 | `general` | Subagent | Write-capable implementation executor | Best for well-scoped multi-file execution |
+| `reviewer` | Subagent | Read-only code review | Reviews uncommitted changes, commits, branches, and PRs without modifying files |
 
 Additional merge behavior:
 
@@ -150,6 +169,10 @@ The `agents` field accepts a record keyed by agent name.
     "general": {
       "model": "anthropic/claude-sonnet-4-6",
       "fallback_models": ["openai/gpt-4.1"]
+    },
+    "reviewer": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "temperature": 0.1
     }
   }
 }
@@ -170,7 +193,7 @@ The `agents` field accepts a record keyed by agent name.
 
 ### Subagent model behavior
 
-For `explore`, `oracle`, `librarian`, and `general`, the configured `model` is passed through as the subagent model hint and runtime assignment target.
+For `explore`, `oracle`, `librarian`, `general`, and `reviewer`, the configured `model` is passed through as the subagent model hint and runtime assignment target.
 
 ## Model recommendations by role
 
@@ -205,6 +228,12 @@ The plugin works with any provider/model pair OpenCode exposes, but the agent ro
 - prioritize solid code generation over premium reasoning
 - best used with a strong mid-tier coding model
 - common fit: Sonnet-class, GPT mid-tier, Gemini Pro-class, or similarly capable coding models
+
+### `reviewer`
+
+- prioritize strong bug finding, diff comprehension, and careful code reasoning
+- use a low temperature for deterministic findings
+- prefer a mid/high-tier coding model, ideally from a different provider than `bytes` for fresh perspective
 
 ## Model fallback resolution
 
@@ -271,7 +300,7 @@ The `chat.params` hook runs on every model call and uses the actual runtime mode
 | Claude | Applies `thinking` defaults for `bytes`, `oracle`, and `general` when the model reports reasoning support; strips OpenAI-only options |
 | OpenAI | Applies `reasoningEffort` defaults for `bytes`, `oracle`, and `general` when the model reports reasoning support; strips Claude-only options |
 | Gemini / other | Strips provider-specific reasoning options |
-| `explore` / `librarian` | No default thinking or reasoning config is applied |
+| `explore` / `librarian` / `reviewer` | No default thinking or reasoning config is applied |
 
 ### Default runtime behavior
 
@@ -398,7 +427,8 @@ If a project needs custom language-server configuration, configure it in OpenCod
     "oracle": { "model": "openai/gpt-5.4", "reasoningEffort": "high" },
     "explore": { "model": "anthropic/claude-haiku-3.5", "temperature": 0.1 },
     "librarian": { "model": "anthropic/claude-haiku-3.5" },
-    "general": { "model": "anthropic/claude-sonnet-4-6" }
+    "general": { "model": "anthropic/claude-sonnet-4-6" },
+    "reviewer": { "model": "anthropic/claude-sonnet-4-6", "temperature": 0.1 }
   }
 }
 ```
@@ -411,7 +441,8 @@ If a project needs custom language-server configuration, configure it in OpenCod
     "oracle": { "model": "anthropic/claude-opus-4-6" },
     "explore": { "model": "openai/gpt-4.1-mini", "temperature": 0.1 },
     "librarian": { "model": "openai/gpt-4.1-mini" },
-    "general": { "model": "openai/gpt-4.1" }
+    "general": { "model": "openai/gpt-4.1" },
+    "reviewer": { "model": "anthropic/claude-sonnet-4-6", "temperature": 0.1 }
   }
 }
 ```
@@ -424,7 +455,8 @@ If a project needs custom language-server configuration, configure it in OpenCod
     "oracle": { "model": "deepseek/deepseek-r1" },
     "explore": { "model": "google/gemini-3-flash", "temperature": 0.1 },
     "librarian": { "model": "google/gemini-3-flash" },
-    "general": { "model": "deepseek/deepseek-chat" }
+    "general": { "model": "deepseek/deepseek-chat" },
+    "reviewer": { "model": "openai/gpt-4.1", "temperature": 0.1 }
   }
 }
 ```
@@ -459,6 +491,11 @@ If a project needs custom language-server configuration, configure it in OpenCod
     "general": {
       "model": "anthropic/claude-sonnet-4-6",
       "fallback_models": ["openai/gpt-4.1"]
+    },
+    "reviewer": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "temperature": 0.1,
+      "fallback_models": ["openai/gpt-4.1"]
     }
   }
 }
@@ -469,8 +506,9 @@ If a project needs custom language-server configuration, configure it in OpenCod
 1. Prefer a different provider for `oracle` than for `bytes` when possible.
 2. Use fast, inexpensive models for `explore` and `librarian`.
 3. Use a solid mid-tier coding model for `general`.
-4. Keep `explore` temperature low when you want deterministic search behavior.
-5. Configure only the agents that need explicit overrides; the rest can inherit OpenCode defaults.
-6. Use `provider/model` identifiers to match OpenCode’s provider list.
-7. Enable `model_fallback` when you want automatic failover across connected providers.
-8. Remember that agents only see enabled tools, MCPs, and peer agents in their injected runtime context.
+4. Use a mid/high-tier coding model with low temperature for `reviewer`; a different provider than `bytes` gives a useful fresh perspective.
+5. Keep `explore` temperature low when you want deterministic search behavior.
+6. Configure only the agents that need explicit overrides; the rest can inherit OpenCode defaults.
+7. Use `provider/model` identifiers to match OpenCode’s provider list.
+8. Enable `model_fallback` when you want automatic failover across connected providers.
+9. Remember that agents only see enabled tools, MCPs, and peer agents in their injected runtime context.

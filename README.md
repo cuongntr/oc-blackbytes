@@ -1,6 +1,6 @@
 # oc-blackbytes
 
-OpenCode plugin for workflow automation. It provisions built-in MCP servers, installs a primary agent plus specialized subagents, registers local search and editing tools, provides the `/setup-models` setup command, adapts model parameters at runtime, injects compatible chat headers, and loads plugin configuration from JSONC.
+OpenCode plugin for workflow automation. It provisions built-in MCP servers, installs a primary agent plus specialized subagents, registers local search and editing tools, provides the `/setup-models` and `/review` commands, adapts model parameters at runtime, injects compatible chat headers, and loads plugin configuration from JSONC.
 
 ## What the plugin does
 
@@ -15,8 +15,8 @@ The plugin wires these OpenCode hook surfaces:
 ## Features
 
 - **Built-in MCP provisioning** — `websearch`, `context7`, and `grep_app`
-- **Built-in agents** — `bytes`, `explore`, `oracle`, `librarian`, and `general`
-- **Built-in commands** — `/setup-models` for guided agent model assignments
+- **Built-in agents** — `bytes`, `explore`, `oracle`, `librarian`, `general`, and `reviewer`
+- **Built-in commands** — `/setup-models` for guided agent model assignments and `/review` for read-only code review
 - **Per-agent model overrides** — configure `model`, `reasoningEffort`, `temperature`, and `fallback_models`
 - **Provider-aware fallback resolution** — discover connected providers and resolve fallback chains when `model_fallback` is enabled
 - **Runtime model parameter adaptation** — Claude thinking, OpenAI reasoning effort, and provider-option stripping happen automatically from the runtime model family
@@ -84,7 +84,8 @@ Create `oc-blackbytes.jsonc` in the OpenCode config directory:
     "oracle": { "model": "openai/gpt-5.4", "reasoningEffort": "high" },
     "explore": { "model": "google/gemini-3-flash", "temperature": 0.1 },
     "librarian": { "model": "minimax/minimax-m2.7" },
-    "general": { "model": "anthropic/claude-sonnet-4-6" }
+    "general": { "model": "anthropic/claude-sonnet-4-6" },
+    "reviewer": { "model": "anthropic/claude-sonnet-4-6", "temperature": 0.1 }
   },
 
   "fallback_models": [
@@ -98,7 +99,18 @@ For the full configuration guide, see [docs/configuration.md](docs/configuration
 
 ### Built-in setup command
 
-Use `/setup-models` to generate or update `oc-blackbytes.jsonc` model assignments for `oracle`, `explore`, `librarian`, and `general`. The command discovers available OpenCode models, recommends role-appropriate assignments, and preserves unrelated plugin config fields when merging changes.
+Use `/setup-models` to generate or update `oc-blackbytes.jsonc` model assignments for `oracle`, `explore`, `librarian`, `general`, and `reviewer`. The command discovers available OpenCode models, recommends role-appropriate assignments, and preserves unrelated plugin config fields when merging changes.
+
+### Built-in review command
+
+Use `/review` to review uncommitted changes, a commit, a branch, or a PR. The command runs as a subtask pinned to the read-only `reviewer` subagent, reads full-file context around changes, and reports concrete findings without modifying files.
+
+```text
+/review                 # review unstaged, staged, and untracked changes
+/review <commit-sha>    # review a commit
+/review <branch-name>   # review changes from branch...HEAD
+/review <pr-number>     # review a GitHub PR
+```
 
 ## Built-in agents
 
@@ -108,9 +120,10 @@ The plugin sets `default_agent` to `bytes` when the user has not already chosen 
 |---|---|---|
 | `bytes` | Primary | End-to-end coding agent for implementation, debugging, planning, review, and delegation |
 | `explore` | Subagent | Read-only codebase search specialist for broad discovery |
-| `oracle` | Subagent | Read-only high-reasoning advisor for architecture, debugging escalation, and self-review |
+| `oracle` | Subagent | Read-only high-reasoning advisor for architecture, debugging escalation, and deep design review |
 | `librarian` | Subagent | Read-only research agent for external docs, remote repositories, and library usage examples |
 | `general` | Subagent | Write-capable executor for multi-file implementation, migrations, and scoped refactors |
+| `reviewer` | Subagent | Read-only code reviewer for uncommitted changes, commits, branches, and PRs |
 
 ### Runtime agent context
 
@@ -207,7 +220,7 @@ The `chat.params` hook uses the actual runtime model, not just the configured hi
 - **Claude** — applies thinking budgets for `bytes`, `oracle`, and `general` when reasoning is supported
 - **OpenAI** — applies reasoning effort defaults for `bytes`, `oracle`, and `general` when reasoning is supported
 - **Gemini / other providers** — strips provider-specific options that do not apply
-- **`explore` and `librarian`** — skip default reasoning/thinking configuration for speed
+- **`explore`, `librarian`, and `reviewer`** — skip default reasoning/thinking configuration for speed and deterministic review
 
 User overrides from `agents.<name>` take precedence where applicable.
 
@@ -329,9 +342,9 @@ Releases are published from GitHub Releases. Publishing a release triggers `.git
 ```bash
 bun run check
 bun run build
-git tag v0.8.3
-git push origin v0.8.3
-gh release create v0.8.3 --title "v0.8.3" --notes-file <release-notes.md>
+git tag v0.8.4
+git push origin v0.8.4
+gh release create v0.8.4 --title "v0.8.4" --notes-file <release-notes.md>
 ```
 
 ## License

@@ -14,14 +14,14 @@ export const ORACLE_PROMPT_METADATA: AgentPromptMetadata = {
       trigger: "Multi-system tradeoffs, unfamiliar patterns",
     },
     {
-      domain: "Self-review",
-      trigger: "After completing significant implementation",
+      domain: "Deep design review",
+      trigger: "High-risk architecture or approach validation",
     },
     { domain: "Hard debugging", trigger: "After 2+ failed fix attempts" },
   ],
   useWhen: [
     "Complex architecture design",
-    "After completing significant work",
+    "High-risk design or approach review",
     "2+ failed fix attempts",
     "Unfamiliar code patterns",
     "Security/performance concerns",

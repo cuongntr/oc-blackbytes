@@ -77,11 +77,12 @@ describe("E2E 14.2: disabled_mcps / disabled_agents / disabled_tools", () => {
     const agent = config?.agent as Record<string, unknown>
     // explore should be absent
     expect(agent?.explore).toBeUndefined()
-    // bytes, oracle, librarian, general should still be present
+    // bytes, oracle, librarian, general, reviewer should still be present
     expect(agent?.bytes).toBeDefined()
     expect(agent?.oracle).toBeDefined()
     expect(agent?.librarian).toBeDefined()
     expect(agent?.general).toBeDefined()
+    expect(agent?.reviewer).toBeDefined()
   })
 
   it("disabled tool (hashline_edit) is absent from the tool registry", async () => {

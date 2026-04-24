@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-04-24
+
+### Added
+
+- `reviewer` built-in subagent for read-only code review of uncommitted changes, commits, branches, and PRs.
+- `/review` built-in command pinned to the `reviewer` subagent and run as a subtask.
+- Built-in fallback-chain recommendations for `reviewer` with low-temperature review-oriented model preferences.
+
+### Changed
+
+- `bytes` delegates significant implementation quality gates to `reviewer` while keeping `oracle` focused on architecture, hard debugging, and deep analysis.
+- Built-in command registration skips commands whose pinned agent is unavailable or disabled.
+- Documentation describes the current reviewer agent, `/review` command, setup-model assignments, configuration examples, and release version `0.8.4`.
+
 ## [0.8.3] - 2026-04-24
 
 ### Changed

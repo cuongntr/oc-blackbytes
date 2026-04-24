@@ -39,6 +39,7 @@ describe("setupModels command shape", () => {
     expect(setupModels.template).toContain("explore")
     expect(setupModels.template).toContain("librarian")
     expect(setupModels.template).toContain("general")
+    expect(setupModels.template).toContain("reviewer")
   })
 
   it("agent is 'bytes'", () => {

@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from "bun:test"
 import { createBuiltinCommands } from "../../src/extensions/commands"
+import { review } from "../../src/extensions/commands/review"
 import { setupModels } from "../../src/extensions/commands/setup-models"
 import { handleCommandConfig } from "../../src/handlers/config-handler/command-config-handler"
 import type { ConfigContext } from "../../src/handlers/config-handler/types"
@@ -40,6 +41,7 @@ describe("handleCommandConfig — no user commands", () => {
 
     expect(ctx.config.command).toBeDefined()
     expect(ctx.config.command?.["setup-models"]).toBeDefined()
+    expect(ctx.config.command?.review).toBeDefined()
     expect(ctx.config.command?.["setup-lsp"]).toBeUndefined()
   })
 
@@ -49,6 +51,7 @@ describe("handleCommandConfig — no user commands", () => {
 
     const registered = ctx.config.command?.["setup-models"]
     expect(registered).toEqual(setupModels)
+    expect(ctx.config.command?.review).toEqual(review)
   })
 
   it("setup-models has the expected description string", () => {
@@ -69,6 +72,15 @@ describe("handleCommandConfig — no user commands", () => {
     expect(cmd.agent).toBe("bytes")
   })
 
+  it("review has agent='reviewer' and runs as a subtask", () => {
+    const ctx = makeCtx()
+    handleCommandConfig(ctx)
+
+    const cmd = ctx.config.command?.review as typeof review
+    expect(cmd.agent).toBe("reviewer")
+    expect(cmd.subtask).toBe(true)
+  })
+
   it("setup-models has a non-empty template string", () => {
     const ctx = makeCtx()
     handleCommandConfig(ctx)
@@ -80,12 +92,13 @@ describe("handleCommandConfig — no user commands", () => {
 })
 
 describe("createBuiltinCommands", () => {
-  it("contains only setup-models", () => {
+  it("contains setup-models and review", () => {
     const commands = createBuiltinCommands()
 
     expect(commands["setup-models"]).toEqual(setupModels)
+    expect(commands.review).toEqual(review)
     expect(commands["setup-lsp"]).toBeUndefined()
-    expect(Object.keys(commands)).toEqual(["setup-models"])
+    expect(Object.keys(commands)).toEqual(["setup-models", "review"])
   })
 })
 
@@ -108,6 +121,7 @@ describe("handleCommandConfig — user command with distinct name", () => {
     // Built-in also present
     expect(ctx.config.command?.["setup-models"]).toBeDefined()
     expect(ctx.config.command?.["setup-models"]).toEqual(setupModels)
+    expect(ctx.config.command?.review).toEqual(review)
     expect(ctx.config.command?.["setup-lsp"]).toBeUndefined()
   })
 
@@ -162,6 +176,7 @@ describe("handleCommandConfig — user command overrides built-in (user-wins)", 
 
     expect(ctx.config.command?.["setup-lsp"]).toEqual(userOverride)
     expect(ctx.config.command?.["setup-models"]).toEqual(setupModels)
+    expect(ctx.config.command?.review).toEqual(review)
   })
 })
 
@@ -177,6 +192,7 @@ describe("handleCommandConfig — edge cases", () => {
 
     expect(ctx.config.command?.["setup-models"]).toBeDefined()
     expect(ctx.config.command?.["setup-lsp"]).toBeUndefined()
+    expect(ctx.config.command?.review).toBeDefined()
   })
 
   it("only registers built-in commands with no extra keys from handler", () => {
@@ -185,7 +201,20 @@ describe("handleCommandConfig — edge cases", () => {
 
     const keys = Object.keys(ctx.config.command ?? {})
     expect(keys).toContain("setup-models")
+    expect(keys).toContain("review")
     expect(keys).not.toContain("setup-lsp")
-    expect(keys).toHaveLength(1)
+    expect(keys).toHaveLength(2)
+  })
+
+  it("skips built-in commands whose pinned agent is unavailable", () => {
+    const ctx = makeCtx()
+    ctx.config.agent = {
+      bytes: { disable: false },
+      reviewer: { disable: true },
+    }
+    handleCommandConfig(ctx)
+
+    expect(ctx.config.command?.["setup-models"]).toBeDefined()
+    expect(ctx.config.command?.review).toBeUndefined()
   })
 })

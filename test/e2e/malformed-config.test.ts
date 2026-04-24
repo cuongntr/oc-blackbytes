@@ -130,5 +130,8 @@ describe("E2E 14.9: malformed config → graceful degradation with clear warning
     expect(agent?.bytes).toBeDefined()
     expect(agent?.explore).toBeDefined()
     expect(agent?.oracle).toBeDefined()
+    expect(agent?.librarian).toBeDefined()
+    expect(agent?.general).toBeDefined()
+    expect(agent?.reviewer).toBeDefined()
   })
 })

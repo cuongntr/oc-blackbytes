@@ -8,7 +8,7 @@ import {
  * Tests for model-requirements.ts:
  * - BUILTIN_FALLBACK_CHAINS structure per agent
  * - FallbackChainEntry shape (model prefix, providers, optional overrides)
- * - Coverage: oracle, explore, librarian, general
+ * - Coverage: oracle, explore, librarian, general, reviewer
  * - bytes is NOT in the builtin chain (intentionally absent)
  */
 
@@ -119,6 +119,25 @@ describe("model-requirements — BUILTIN_FALLBACK_CHAINS", () => {
         (e) => e.providers.includes("anthropic") || e.providers.includes("github-copilot"),
       )
       expect(hasAnthropic).toBe(true)
+    })
+  })
+
+  describe("reviewer chain", () => {
+    it("has a reviewer chain with at least one entry", () => {
+      const chain = BUILTIN_FALLBACK_CHAINS.reviewer
+      expect(Array.isArray(chain)).toBe(true)
+      expect(chain.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it("reviewer chain uses mid/high-tier models with low temperature", () => {
+      for (const entry of BUILTIN_FALLBACK_CHAINS.reviewer) {
+        expect(typeof entry.model).toBe("string")
+        expect(entry.model.length).toBeGreaterThan(0)
+        expect(Array.isArray(entry.providers)).toBe(true)
+        expect(entry.providers.length).toBeGreaterThan(0)
+        expect(entry.temperature).toBeDefined()
+        expect(entry.temperature).toBeLessThanOrEqual(0.1)
+      }
     })
   })
 
