@@ -306,7 +306,7 @@ Typical flow:
 1. run `read`
 2. copy exact `LINE#ID` anchors
 3. issue one `hashline_edit` call per file with batched edits against the same snapshot
-4. review the success output, which includes `Updated` or `Moved`, the number of requested edits, `+A -D` line counts, and a fenced `diff` block capped at 200 lines
+4. review the success output, which includes `Updated`, `Moved`, or `Deleted`, workspace-relative display paths, the number of requested edits, `+A -D` line counts, and a fenced `diff` block capped at 200 lines for changed content
 5. re-read before another edit call on that file
 
 Key operations:
@@ -317,7 +317,8 @@ Key operations:
 - optional `rename`
 - optional `delete`
 
-Successful edit output is Markdown-friendly and remains readable as plain text. Large diffs include a truncation note pointing to `git diff -- <path>` for the full file diff.
+Successful edit output is Markdown-friendly and remains readable as plain text. Updated and moved files show workspace-relative paths in both the summary and diff headers. Delete mode returns a compact confirmation such as ``Deleted `path` ``. Large diffs include a truncation note pointing to `git diff -- <path>` for the full file diff.
+
 ### `ast_grep_search` and `ast_grep_replace`
 
 Pattern rules:

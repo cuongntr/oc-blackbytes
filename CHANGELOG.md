@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-04-24
+
+### Changed
+
+- `hashline_edit` edit, move, and delete results use Markdown-friendly workspace-relative display paths while preserving absolute paths in metadata.
+- Documentation describes the current hashline result format, release command examples, and version `0.8.3`.
+
 ## [0.8.2] - 2026-04-24
 
 ### Added

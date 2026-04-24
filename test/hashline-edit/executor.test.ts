@@ -86,11 +86,14 @@ describe("executeHashlineEditTool — end-to-end", () => {
         makeCtx(dir),
       )
 
-      expect(result).toContain(`Updated \`${filePath}\``)
+      expect(result).toContain("Updated `diff-summary.ts`")
+      expect(result).not.toContain(`Updated \`${filePath}\``)
       expect(result).toContain("Applied 1 edit: +")
       expect(result).toContain("```diff")
+      expect(result).toContain("--- diff-summary.ts")
+      expect(result).toContain("+++ diff-summary.ts")
       expect(result).toContain("+// generated header")
-      expect(result).toContain("```")
+      expect(result).toEndWith("```")
     })
   })
 
@@ -107,7 +110,7 @@ describe("executeHashlineEditTool — end-to-end", () => {
         makeCtx(dir),
       )
 
-      expect(result).toContain("deleted")
+      expect(result).toBe("Deleted `to-delete.ts`")
       const exists = await Bun.file(filePath).exists()
       expect(exists).toBe(false)
     })

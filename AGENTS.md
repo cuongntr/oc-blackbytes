@@ -99,7 +99,7 @@ src/
 - Built-in MCPs: `websearch`, `context7`, `grep_app`.
 - Built-in agents: `bytes`, `explore`, `oracle`, `librarian`, `general`.
 - Bundled tools: `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, `glob`.
-- `hashline_edit` success output includes a Markdown-friendly edit summary, addition/removal counts, and a bounded fenced `diff` block for review.
+- `hashline_edit` success output includes a Markdown-friendly edit summary, workspace-relative display paths, addition/removal counts, and a bounded fenced `diff` block for review; delete mode returns a compact Markdown-friendly confirmation.
 - Built-in commands: `setup-models`.
 - OpenCode LSP diagnostics may appear in supported tool output or a core `diagnostics` tool when OpenCode is configured for LSP. Prompt guidance is diagnostics-first: fix diagnostics caused by the agent's changes and use bundled search/read tools for discovery instead of relying on experimental semantic `lsp` operations.
 - Language matching is built into every agent's prompt: agents detect the user's language and respond in the same language; code, technical terms, file paths, tool names, and git messages remain in English.

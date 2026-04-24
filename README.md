@@ -21,7 +21,7 @@ The plugin wires these OpenCode hook surfaces:
 - **Provider-aware fallback resolution** — discover connected providers and resolve fallback chains when `model_fallback` is enabled
 - **Runtime model parameter adaptation** — Claude thinking, OpenAI reasoning effort, and provider-option stripping happen automatically from the runtime model family
 - **Bundled tools** — `hashline_edit`, `ast_grep_search`, `ast_grep_replace`, `grep`, and `glob`
-- **Hashline editing workflow** — `read` output becomes `LINE#ID|content`, `hashline_edit` applies anchored edits, and successful edit results include an edit summary plus a bounded fenced `diff` block
+- **Hashline editing workflow** — `read` output becomes `LINE#ID|content`, `hashline_edit` applies anchored edits, and successful edit/delete results use Markdown-friendly workspace-relative paths with bounded fenced `diff` blocks for changed content
 - **Dynamic agent resource injection** — every enabled agent prompt gets an `<available_resources>` section describing oc-blackbytes-managed bundled tools, MCPs, and peer agents without implying a complete OpenCode runtime inventory
 - **JSONC config loading** — supports comments and trailing commas in `oc-blackbytes.jsonc`
 - **Structured logging** — writes buffered logs to `/tmp/oc-blackbytes.log`
@@ -153,8 +153,9 @@ When `hashline_edit` is enabled:
 
 1. `read` output is rewritten to `LINE#ID|content`
 2. edits reference those exact anchors through `hashline_edit`
-3. successful `hashline_edit` output includes a Markdown-friendly summary, the number of requested edits, addition/removal counts, and a fenced `diff` block capped at 200 lines
-4. successful `write` output is replaced with `File written successfully. N lines written.`
+3. successful `hashline_edit` output includes a Markdown-friendly summary with workspace-relative paths, the number of requested edits, addition/removal counts, and a fenced `diff` block capped at 200 lines
+4. delete mode returns a compact Markdown-friendly confirmation such as ``Deleted `path/to/file.ts` ``
+5. successful `write` output is replaced with `File written successfully. N lines written.`
 
 This keeps editing precise, compact, reviewable, and safe across repeated changes.
 
@@ -328,9 +329,9 @@ Releases are published from GitHub Releases. Publishing a release triggers `.git
 ```bash
 bun run check
 bun run build
-git tag v0.8.2
-git push origin v0.8.2
-gh release create v0.8.2 --title "v0.8.2" --notes-file <release-notes.md>
+git tag v0.8.3
+git push origin v0.8.3
+gh release create v0.8.3 --title "v0.8.3" --notes-file <release-notes.md>
 ```
 
 ## License

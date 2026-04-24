@@ -1,3 +1,4 @@
+import path from "node:path"
 import type { PluginInput } from "@opencode-ai/plugin"
 import type { ToolContext } from "@opencode-ai/plugin/tool"
 import { assertWithinWorkspace } from "../../../shared/utils"
@@ -34,6 +35,15 @@ interface SuccessMessageOptions {
 
 function formatInlineCode(value: string): string {
   return `\`${value.replaceAll("`", "\\`")}\``
+}
+
+function formatDisplayPath(filePath: string, workspaceDirectory: string): string {
+  const relativePath = path.relative(workspaceDirectory, filePath)
+  if (relativePath && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
+    return relativePath
+  }
+
+  return filePath
 }
 
 function formatResultDiff(diff: string): {
@@ -93,8 +103,9 @@ function buildSuccessMeta(
   afterContent: string,
   noopEdits: number,
   deduplicatedEdits: number,
+  diffPath = effectivePath,
 ) {
-  const unifiedDiff = generateUnifiedDiff(beforeContent, afterContent, effectivePath)
+  const unifiedDiff = generateUnifiedDiff(beforeContent, afterContent, diffPath)
   const { additions, deletions } = countLineDiffs(beforeContent, afterContent)
   const beforeLines = beforeContent.split("\n")
   const afterLines = afterContent.split("\n")
@@ -109,7 +120,7 @@ function buildSuccessMeta(
   }
 
   return {
-    title: effectivePath,
+    title: diffPath,
     additions,
     deletions,
     diff: unifiedDiff,
@@ -165,6 +176,8 @@ export async function executeHashlineEditTool(
 
     const edits = deleteMode ? [] : normalizeHashlineEdits(args.edits)
 
+    const displayPath = formatDisplayPath(filePath, context.directory)
+    const displayRenamePath = rename ? formatDisplayPath(rename, context.directory) : undefined
     const file = Bun.file(filePath)
     const exists = await file.exists()
     if (!exists && !deleteMode && !canCreateFromMissingFile(edits)) {
@@ -174,7 +187,7 @@ export async function executeHashlineEditTool(
     if (deleteMode) {
       if (!exists) return `Error: File not found: ${filePath}`
       await Bun.file(filePath).delete()
-      return `Successfully deleted ${filePath}`
+      return `Deleted ${formatInlineCode(displayPath)}`
     }
 
     const rawOldContent = exists ? Buffer.from(await file.arrayBuffer()).toString("utf8") : ""
@@ -206,6 +219,7 @@ export async function executeHashlineEditTool(
           formattedEnvelope.content,
           applyResult.noopEdits,
           applyResult.deduplicatedEdits,
+          displayPath,
         )
         if (typeof metadataContext.metadata === "function") {
           metadataContext.metadata(formattedMeta)
@@ -219,11 +233,12 @@ export async function executeHashlineEditTool(
             formattedEnvelope.content,
             applyResult.noopEdits,
             applyResult.deduplicatedEdits,
+            displayRenamePath,
           )
           return formatSuccessMessage({
             action: "Moved",
-            path: rename,
-            previousPath: filePath,
+            path: displayRenamePath ?? rename,
+            previousPath: displayPath,
             editCount: edits.length,
             additions: movedMeta.additions,
             deletions: movedMeta.deletions,
@@ -232,7 +247,7 @@ export async function executeHashlineEditTool(
         }
         return formatSuccessMessage({
           action: "Updated",
-          path: filePath,
+          path: displayPath,
           editCount: edits.length,
           additions: formattedMeta.additions,
           deletions: formattedMeta.deletions,
@@ -253,8 +268,8 @@ export async function executeHashlineEditTool(
       canonicalNewContent,
       applyResult.noopEdits,
       applyResult.deduplicatedEdits,
+      displayRenamePath ?? displayPath,
     )
-
     if (typeof metadataContext.metadata === "function") {
       metadataContext.metadata(meta)
     }
@@ -262,8 +277,8 @@ export async function executeHashlineEditTool(
     if (rename && rename !== filePath) {
       return formatSuccessMessage({
         action: "Moved",
-        path: effectivePath,
-        previousPath: filePath,
+        path: displayRenamePath ?? effectivePath,
+        previousPath: displayPath,
         editCount: edits.length,
         additions: meta.additions,
         deletions: meta.deletions,
@@ -273,7 +288,7 @@ export async function executeHashlineEditTool(
 
     return formatSuccessMessage({
       action: "Updated",
-      path: effectivePath,
+      path: displayRenamePath ?? displayPath,
       editCount: edits.length,
       additions: meta.additions,
       deletions: meta.deletions,
